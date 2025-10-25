@@ -1,7 +1,9 @@
 using Api.Errors;
 using Api.Services;
+using Core.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
+using Infrastructure.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +18,9 @@ public static class AppServiceExtension
         {
             opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
         });
+
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));

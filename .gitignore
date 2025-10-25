@@ -88,6 +88,7 @@ artifacts/
 # Local development settings
 appsettings.Development.json
 *.Development.json
+*.Production.json
 
 # Entity Framework Core
 *.db

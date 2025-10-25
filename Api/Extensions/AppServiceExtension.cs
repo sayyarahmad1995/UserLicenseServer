@@ -1,6 +1,10 @@
+using Api.Errors;
+using Api.Services;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace Api.Extensions;
 
@@ -15,7 +19,24 @@ public static class AppServiceExtension
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));
-        
+
+        services.AddSingleton<HealthService>();
+
+        services.Configure<ApiBehaviorOptions>(opt =>
+        {
+            opt.InvalidModelStateResponseFactory = ActionContext =>
+            {
+                var errors = ActionContext.ModelState
+                    .Where(e => e.Value?.Errors.Count > 0)
+                    .SelectMany(x => x.Value!.Errors)
+                    .Select(x => x.ErrorMessage)
+                    .ToArray();
+
+                var errorResponse = new ApiValidationErrorResponse { Errors = errors };
+                return new BadRequestObjectResult(errorResponse);
+            };
+        });
+
         return services;
     }
 }

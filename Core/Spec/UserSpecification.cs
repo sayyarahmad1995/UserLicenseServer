@@ -1,31 +1,30 @@
 using Core.Entities;
-using Core.Spec;
-using Infrastructure.Data.Helpers;
-using System.Linq.Expressions;
 
-namespace Core.Specifications
+namespace Core.Spec;
+
+public class UserSpecification : BaseSpecification<User>
 {
-    public class UserSpecification : BaseSpecification<User>
+    public UserSpecification(
+        string? username = null,
+        string? email = null,
+        string? role = null,
+        DateTime? createdAfter = null,
+        DateTime? createdBefore = null,
+        bool? isVerified = null,
+        bool includeLicenses = false)
     {
-        public UserSpecification(string? username, string? email = null, string? role = null, bool? onlyVerified = null)
-        {
-            Expression<Func<User, bool>> criteria = u => true;
+        AddCriteria(u =>
+            (string.IsNullOrEmpty(username) || u.Username!.ToLower().Contains(username.ToLower())) &&
+            (string.IsNullOrEmpty(email) || u.Email!.ToLower().Contains(email.ToLower())) &&
+            (string.IsNullOrEmpty(role) || u.Role!.ToLower() == role.ToLower()) &&
+            (!createdAfter.HasValue || u.CreatedAt >= createdAfter.Value) &&
+            (!createdBefore.HasValue || u.CreatedAt <= createdBefore.Value) &&
+            (!isVerified.HasValue || (isVerified.Value ? u.VerifiedAt != null : u.VerifiedAt == null))
+        );
 
-            if (!string.IsNullOrEmpty(username))
-                criteria = criteria.AndAlso(u => u.Username!.ToLower().Contains(username.ToLower()));
+        OrderByDescending = q => q.OrderByDescending(u => u.CreatedAt);
 
-            if (!string.IsNullOrEmpty(email))
-                criteria = criteria.AndAlso(u => u.Email!.ToLower().Contains(email.ToLower()));
-
-            if (!string.IsNullOrEmpty(role))
-                criteria = criteria.AndAlso(u => u.Role == role);
-
-            if (onlyVerified.HasValue && onlyVerified.Value)
-                criteria = criteria.AndAlso(u => u.VerifiedAt != null);
-
-            AddCriteria(criteria);
-
+        if (includeLicenses)
             AddInclude(u => u.Licenses);
-        }
     }
 }

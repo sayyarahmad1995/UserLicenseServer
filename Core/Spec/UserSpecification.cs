@@ -7,15 +7,15 @@ namespace Core.Specifications
 {
     public class UserSpecification : BaseSpecification<User>
     {
-        public UserSpecification(string username = null, string email = null, string role = null, bool? onlyVerified = null)
+        public UserSpecification(string? username, string? email = null, string? role = null, bool? onlyVerified = null)
         {
             Expression<Func<User, bool>> criteria = u => true;
 
             if (!string.IsNullOrEmpty(username))
-                criteria = criteria.AndAlso(u => u.Username.ToLower().Contains(username.ToLower()));
+                criteria = criteria.AndAlso(u => u.Username!.ToLower().Contains(username.ToLower()));
 
             if (!string.IsNullOrEmpty(email))
-                criteria = criteria.AndAlso(u => u.Email.ToLower().Contains(email.ToLower()));
+                criteria = criteria.AndAlso(u => u.Email!.ToLower().Contains(email.ToLower()));
 
             if (!string.IsNullOrEmpty(role))
                 criteria = criteria.AndAlso(u => u.Role == role);

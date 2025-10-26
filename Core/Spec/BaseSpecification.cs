@@ -4,10 +4,10 @@ namespace Core.Spec
 {
     public abstract class BaseSpecification<T> : ISpecification<T>
     {
-        public Expression<Func<T, bool>> Criteria { get; private set; }
+        public Expression<Func<T, bool>>? Criteria { get; private set; }
         public List<Expression<Func<T, object>>> Includes { get; } = new();
-        public Func<IQueryable<T>, IOrderedQueryable<T>> OrderBy { get; protected set; }
-        public Func<IQueryable<T>, IOrderedQueryable<T>> OrderByDescending { get; protected set; }
+        public Func<IQueryable<T>, IOrderedQueryable<T>>? OrderBy { get; protected set; }
+        public Func<IQueryable<T>, IOrderedQueryable<T>>? OrderByDescending { get; protected set; }
         public int Take { get; private set; }
         public int Skip { get; private set; }
         public bool IsPagingEnabled { get; private set; }

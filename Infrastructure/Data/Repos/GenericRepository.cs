@@ -14,13 +14,13 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         _context = context;
     }
 
-    public async Task<T> GetByIdAsync(int id)
+    public async Task<T?> GetByIdAsync(int id)
         => await _context.Set<T>().FindAsync(id);
 
     public async Task<IReadOnlyList<T>> ListAllAsync()
         => await _context.Set<T>().ToListAsync();
 
-    public async Task<T> GetEntityWithSpec(ISpecification<T> spec)
+    public async Task<T?> GetEntityWithSpec(ISpecification<T> spec)
         => await ApplySpecification(spec).FirstOrDefaultAsync();
 
     public async Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec)

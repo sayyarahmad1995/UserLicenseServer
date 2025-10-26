@@ -37,7 +37,7 @@ public class ExceptionMiddleware
 
             var response = _env.IsDevelopment()
                 ? new ApiException((int)HttpStatusCode.InternalServerError, ex.Message, ex.StackTrace)
-                : new ApiException((int)HttpStatusCode.InternalServerError);
+                : new ApiException((int)HttpStatusCode.InternalServerError, null);
 
             var json = JsonSerializer.Serialize(response, _jsonOptions);
 

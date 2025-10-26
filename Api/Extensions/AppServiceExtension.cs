@@ -21,6 +21,8 @@ public static class AppServiceExtension
 
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));

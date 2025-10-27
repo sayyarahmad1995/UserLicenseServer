@@ -1,10 +1,15 @@
+using System.Text.Json.Serialization;
 using Api.Extensions;
 using Api.Middlewares;
 using Infrastructure.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddAppServices(builder.Configuration);
 
 var app = builder.Build();

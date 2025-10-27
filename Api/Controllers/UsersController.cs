@@ -1,4 +1,5 @@
 using Api.DTOs;
+using Api.Helpers;
 using AutoMapper;
 using Core.Entities;
 using Core.Interfaces;
@@ -18,19 +19,22 @@ public class UsersController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> Users(
-        [FromQuery] string? username = null,
-        [FromQuery] string? email = null,
-        [FromQuery] string? role = null,
-        [FromQuery] DateTime? createdAfter = null,
-        [FromQuery] DateTime? createdBefore = null,
-        [FromQuery] bool? isVerified = null
-    )
+    public async Task<ActionResult<Pagination<UserDto>>> Users([FromQuery] UserSpecParams specParams)
     {
-        var spec = new UserSpecification(username, email, role, createdAfter, createdBefore, isVerified);
+        var spec = new UserSpecification(specParams);
+        var countSpec = new UserCountSpecification(specParams);
+
+        var totalItems = await _unitOfWork.Repository<User>().CountAsync(countSpec);
         var users = await _unitOfWork.Repository<User>().ListAsync(spec);
 
-        var userDtos = _mapper.Map<IReadOnlyList<UserDto>>(users);
-        return Ok(userDtos);
+        var mappedData = _mapper.Map<IReadOnlyList<UserDto>>(users);
+        var data = new Pagination<UserDto>
+        {
+            PageIndex = specParams.PageIndex,
+            PageSize = specParams.PageSize,
+            TotalCount = totalItems,
+            Data = mappedData
+        };
+        return Ok(data);
     }
 }

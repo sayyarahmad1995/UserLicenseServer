@@ -13,22 +13,8 @@ public class UserSpecParams
     public string? Username { get; set; }
     public string? Email { get; set; }
     public string? Role { get; set; }
-    public DateTime? _CreatedAfter { get; set; }
-    public DateTime? CreatedAfter
-    {
-        get => _CreatedAfter;
-        set => _CreatedAfter = value.HasValue
-            ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
-            : null;
-    }
-    public DateTime? _CreatedBefore { get; set; }
-    public DateTime? CreatedBefore
-    {
-        get => _CreatedBefore;
-        set => _CreatedBefore = value.HasValue
-            ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
-            : null;
-    }
+    public DateTime? CreatedAfter { get; set; }
+    public DateTime? CreatedBefore { get; set; }
     public bool? IsVerified { get; set; }
     public bool IncludeLicenses { get; set; }
     public string? Sort { get; set; }

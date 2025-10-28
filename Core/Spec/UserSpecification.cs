@@ -47,8 +47,10 @@ public class UserSpecification : BaseSpecification<User>
         }
         else
             AddOrderBy(u => u.Id);
+    }
 
-        if (specParams.IncludeLicenses)
-            AddInclude(u => u.Licenses);
+    public UserSpecification(int Id) : base(x => x.Id == Id)
+    {
+        AddInclude(x => x.Licenses);
     }
 }

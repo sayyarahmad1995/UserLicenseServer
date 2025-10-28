@@ -41,8 +41,13 @@ public class UsersController : BaseApiController
     [HttpGet("{id}")]
     public async Task<ActionResult<UserDto>> GetUserById(int id)
     {
-        var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
-        var data = _mapper.Map<UserDto>(user);
+        var spec = new UserSpecification(id);
+        var user = await _unitOfWork.Repository<User>().GetEntityWithSpec(spec);
+
+        if (user == null)
+            return NotFound(new { message = "User not found" });
+
+        var data = _mapper.Map<UserWithLicensesDto>(user);
 
         return Ok(data);
     }

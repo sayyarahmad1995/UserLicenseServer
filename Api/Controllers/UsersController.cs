@@ -19,7 +19,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<ActionResult<Pagination<UserDto>>> Users([FromQuery] UserSpecParams specParams)
+    public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams specParams)
     {
         var spec = new UserSpecification(specParams);
         var countSpec = new UserCountSpecification(specParams);
@@ -35,6 +35,15 @@ public class UsersController : BaseApiController
             TotalCount = totalItems,
             Data = mappedData
         };
+        return Ok(data);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<UserDto>> GetUserById(int id)
+    {
+        var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
+        var data = _mapper.Map<UserDto>(user);
+
         return Ok(data);
     }
 }

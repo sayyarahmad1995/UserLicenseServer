@@ -1,3 +1,4 @@
+using Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,11 @@ public class DbInitializer
             await context.Database.MigrateAsync();
         }
 
+        // Seed the admin user (only run once, or comment out if already seeded)
         await AdminSeeder.SeedAsync(context, serviceProvider, logger);
+
+        // Seed development data (users, licenses, etc.)
+        // ⚠️ Comment out these lines in production
         await UserSeeder.SeedAsync(context, logger);
         await LicenseSeeder.SeedAsync(context, logger);
 

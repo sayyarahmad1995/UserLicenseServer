@@ -31,7 +31,7 @@ public class UserSpecParams
     }
     public bool? IsVerified { get; set; }
     public bool IncludeLicenses { get; set; }
-    public string? Sort { get; set; } = "createdatdesc";
+    public string? Sort { get; set; }
     private string? _search;
     public string? Search
     {

@@ -1,5 +1,6 @@
 using Core.Entities;
 using Core.Interfaces;
+using Infrastructure.Data.Context;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Data;

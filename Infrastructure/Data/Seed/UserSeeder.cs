@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Core.Entities;
+using Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -22,11 +23,14 @@ public static class UserSeeder
             return;
         }
 
-        var usersJson = await File.ReadAllTextAsync(usersFile);
-        var users = JsonSerializer.Deserialize<List<User>>(usersJson, new JsonSerializerOptions
+        var jsonOpt = new JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true
-        }) ?? new();
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = null
+        };
+
+        var usersJson = await File.ReadAllTextAsync(usersFile);
+        var users = JsonSerializer.Deserialize<List<User>>(usersJson, jsonOpt) ?? new();
 
         if (!users.Any())
         {
@@ -34,34 +38,7 @@ public static class UserSeeder
             return;
         }
 
-        foreach (var user in users)
-        {
-            if (await context.Users.AnyAsync(u => u.Email == user.Email))
-                continue;
-
-            if (!string.IsNullOrEmpty(user.PasswordHash))
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
-
-            user.CreatedAt = DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc);
-
-            if (user?.CreatedAt != null)
-                user.CreatedAt = DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc);
-
-            if (user?.LastLogin != null)
-                user.LastLogin = DateTime.SpecifyKind((DateTime)user.LastLogin, DateTimeKind.Utc);
-
-            if (user?.UpdatedAt.HasValue == true)
-                user.UpdatedAt = DateTime.SpecifyKind(user.UpdatedAt.Value, DateTimeKind.Utc);
-
-            if (user?.VerifiedAt.HasValue == true)
-                user.VerifiedAt = DateTime.SpecifyKind(user.VerifiedAt.Value, DateTimeKind.Utc);
-
-            if (!context.Users.Any(u => u.Id == user!.Id))
-            {
-                await context.Users.AddAsync(user!);
-            }
-        }
-
+        await context.AddRangeAsync(users);
         await context.SaveChangesAsync();
         logger.LogInformation("✅ Seeded {Count} users", users.Count);
     }

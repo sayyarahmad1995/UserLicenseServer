@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Core.Entities;
+using Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -23,30 +24,18 @@ public static class LicenseSeeder
             return;
         }
 
-        var json = File.ReadAllText("../Infrastructure/Data/Seed/SeedData/licenses.json");
+        var json = File.ReadAllText(file);
 
-        var licenses = JsonSerializer.Deserialize<List<License>>(json, new JsonSerializerOptions
+        var jsonOpt = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-        }) ?? new();
+            PropertyNamingPolicy = null,
+        };
 
-        foreach (var license in licenses)
-        {
-            if (license?.CreatedAt != null)
-                license.CreatedAt = DateTime.SpecifyKind(license.CreatedAt, DateTimeKind.Utc);
+        jsonOpt.Converters.Add(new JsonStringEnumConverter());
 
-            if (license?.ExpiresAt != null)
-                license.ExpiresAt = DateTime.SpecifyKind(license.ExpiresAt, DateTimeKind.Utc);
-
-            if (license?.RevokedAt != null)
-                license.RevokedAt = DateTime.SpecifyKind((DateTime)license.RevokedAt, DateTimeKind.Utc);
-
-            if (!context.Licenses.Any(u => u.Id == license!.Id))
-            {
-                await context.Licenses.AddAsync(license!);
-            }
-        }
+        var licenses = JsonSerializer.Deserialize<List<License>>(json, jsonOpt);
+        await context.AddRangeAsync(licenses!);
 
         await context.SaveChangesAsync();
         logger.LogInformation("✅ Seeded {Count} licenses", licenses!.Count);

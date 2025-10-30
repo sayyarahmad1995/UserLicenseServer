@@ -26,7 +26,7 @@ public class TestController : BaseApiController
     [HttpGet("notfound")]
     public IActionResult GetNotFound()
     {
-        return NotFound(new { message = "Resource not found" });
+        return NotFound(new ApiResponse(404));
     }
 
     [HttpGet("validationerror")]
@@ -55,6 +55,6 @@ public class TestController : BaseApiController
     [HttpGet("badrequest")]
     public IActionResult GetBadRequest()
     {
-        return BadRequest(new { message = "This is a bad request" });
+        return BadRequest(new ApiResponse(400));
     }
 }

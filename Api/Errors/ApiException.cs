@@ -11,5 +11,6 @@ public class ApiException : ApiResponse
     }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyOrder(100)]
     public string? Details { get; set; }
 }

@@ -52,7 +52,7 @@ public class UsersController : BaseApiController
         return Ok(data);
     }
 
-    [HttpGet("{id}/{status}")]
+    [HttpPatch("{id}/{status}")]
     public async Task<ActionResult<UserDto>> UserStatus(int id, string status)
     {
         var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
@@ -85,7 +85,7 @@ public class UsersController : BaseApiController
             await _unitOfWork.SaveChangesAsync();
 
             var mapData = _mapper.Map<UserDto>(user);
-            return Ok(mapData);
+            return Ok(new ApiResponse(200, message: $"User status updated to {mapData.Status}", data: mapData));
         }
         catch (InvalidOperationException ex)
         {

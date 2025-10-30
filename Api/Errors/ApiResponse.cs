@@ -4,11 +4,19 @@ public class ApiResponse
 {
     public int StatusCode { get; set; }
     public string? Message { get; set; }
+    public object? Data { get; set; }
 
     public ApiResponse(int statusCode, string? message = null)
     {
         StatusCode = statusCode;
         Message = message ?? GetDefaultMessageForStatusCode(statusCode);
+    }
+
+    public ApiResponse(int statusCode, object data, string? message = null)
+    {
+        StatusCode = statusCode;
+        Message = message ?? GetDefaultMessageForStatusCode(statusCode);
+        Data = data;
     }
 
     private static string? GetDefaultMessageForStatusCode(int statusCode)

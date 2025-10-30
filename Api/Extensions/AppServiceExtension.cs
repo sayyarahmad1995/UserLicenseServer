@@ -2,7 +2,6 @@ using Api.Errors;
 using Api.Services;
 using Core.Interfaces;
 using Infrastructure.Data;
-using Infrastructure.Data.Context;
 using Infrastructure.Data.Options;
 using Infrastructure.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;

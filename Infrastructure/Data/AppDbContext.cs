@@ -3,7 +3,7 @@ using Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Infrastructure.Data.Context;
+namespace Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {

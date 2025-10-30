@@ -1,6 +1,6 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Core.Entities;
-using Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +28,7 @@ public static class UserSeeder
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = null
         };
+        jsonOpt.Converters.Add(new JsonStringEnumConverter());
 
         var usersJson = await File.ReadAllTextAsync(usersFile);
         var users = JsonSerializer.Deserialize<List<User>>(usersJson, jsonOpt) ?? new();

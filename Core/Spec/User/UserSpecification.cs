@@ -4,17 +4,8 @@ namespace Core.Spec;
 
 public class UserSpecification : BaseSpecification<User>
 {
-    public UserSpecification(UserSpecParams specParams) : base(x =>
-        (string.IsNullOrEmpty(specParams.Username) || x.Username!.ToLower().Contains(specParams.Username.ToLower())) &&
-        (string.IsNullOrEmpty(specParams.Email) || x.Email!.ToLower().Contains(specParams.Email.ToLower())) &&
-        (string.IsNullOrEmpty(specParams.Role) || x.Role!.ToLower().Equals(specParams.Role.ToLower())) &&
-        (!specParams.CreatedAfter.HasValue || x.CreatedAt >= specParams.CreatedAfter.Value) &&
-        (!specParams.CreatedBefore.HasValue || x.CreatedAt <= specParams.CreatedBefore.Value) &&
-        (!specParams.IsVerified.HasValue || (specParams.IsVerified.Value ? x.VerifiedAt != null : x.VerifiedAt == null)) &&
-        (string.IsNullOrEmpty(specParams.Search) ||
-        x.Username!.ToLower().Contains(specParams.Search.ToLower()) ||
-        x.Email!.ToLower().Contains(specParams.Search.ToLower()))
-    )
+    public UserSpecification(UserSpecParams specParams) 
+        : base(UserSpecificationBuilder.Build(specParams))
     {
         ApplyPaging(specParams.PageSize * (specParams.PageIndex - 1), specParams.PageSize);
 
@@ -39,6 +30,18 @@ public class UserSpecification : BaseSpecification<User>
                     break;
                 case "createdatdesc":
                     AddOrderByDescending(u => u.CreatedAt);
+                    break;
+                case "verifiedatasc":
+                    AddOrderBy(u => u.VerifiedAt!);
+                    break;
+                case "verifiedatdesc":
+                    AddOrderByDescending(u => u.VerifiedAt!);
+                    break;
+                case "roleasc":
+                    AddOrderBy(u => u.Role!);
+                    break;
+                case "roledesc":
+                    AddOrderByDescending(u => u.Role!);
                     break;
                 default:
                     AddOrderBy(u => u.Id);

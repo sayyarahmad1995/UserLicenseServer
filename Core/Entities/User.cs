@@ -24,6 +24,7 @@ public class User : BaseEntity
 
         VerifiedAt = DateTime.UtcNow;
         Status = UserStatus.Verified;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()

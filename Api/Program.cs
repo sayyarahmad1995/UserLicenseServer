@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using Api.Extensions;
 using Api.Middlewares;
+using Core.Interfaces;
+using Infrastructure.Data;
 using Infrastructure.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +20,8 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseStatusCodePagesWithReExecute("/error/{0}");
+
+app.UseRedisCacheInvalidation();
 
 if (app.Environment.IsDevelopment())
 {

@@ -13,8 +13,12 @@ public class UsersController : BaseApiController
 {
    private readonly IUnitOfWork _unitOfWork;
    private readonly IMapper _mapper;
-   public UsersController(IUnitOfWork unitOfWork, IMapper mapper)
+   private readonly ICacheRepository _cacheRepo;
+   private readonly ILogger<UsersController> _logger;
+   public UsersController(IUnitOfWork unitOfWork, IMapper mapper, ICacheRepository cacheRepo, ILogger<UsersController> logger)
    {
+      _logger = logger;
+      _cacheRepo = cacheRepo;
       _mapper = mapper;
       _unitOfWork = unitOfWork;
    }
@@ -42,14 +46,36 @@ public class UsersController : BaseApiController
    [HttpGet("{id}")]
    public async Task<ActionResult<UserDto>> GetUserById(int id)
    {
+      var cacheKey = $"user:{id}";
+      UserDto? userDto;
+      try
+      {
+         userDto = await _cacheRepo.GetAsync<UserDto>(cacheKey);
+         if (userDto != null)
+            return Ok(userDto);
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError($"Redis not available: {ex.Message}");
+      }
+
       var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
 
       if (user == null)
          return NotFound(new { message = "User not found" });
 
-      var data = _mapper.Map<UserDto>(user);
+      userDto = _mapper.Map<UserDto>(user);
 
-      return Ok(data);
+      try
+      {
+         await _cacheRepo.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(10));
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError($"Failed to cache user in Redis: {ex.Message}");
+      }
+
+      return Ok(userDto);
    }
 
    [HttpPatch("{id}/{status}")]
@@ -83,6 +109,9 @@ public class UsersController : BaseApiController
          }
          _unitOfWork.Repository<User>().Update(user);
          await _unitOfWork.SaveChangesAsync();
+
+         var cacheKey = $"user:{id}";
+         await _cacheRepo.PublishInvalidationAsync(cacheKey);
 
          var mapData = _mapper.Map<UserDto>(user);
          return Ok(new ApiResponse(200, message: $"User status updated to {mapData.Status}", data: mapData));

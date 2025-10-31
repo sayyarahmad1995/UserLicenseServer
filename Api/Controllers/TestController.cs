@@ -1,60 +1,87 @@
 using Api.Errors;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 
 namespace Api.Controllers;
 
 public class TestController : BaseApiController
 {
-    [HttpGet("slow")]
-    public async Task<IActionResult> Slow(CancellationToken cancellationToken)
-    {
-        Console.WriteLine("Started slow request");
+   private readonly ICacheRepository _cacheRepo;
+   private readonly IUnitOfWork _unitOfWork;
+   private readonly IConnectionMultiplexer _redis;
+   public TestController(IUnitOfWork unitOfWork, ICacheRepository cacheRepo, IConnectionMultiplexer redis)
+   {
+      _redis = redis;
+      _unitOfWork = unitOfWork;
+      _cacheRepo = cacheRepo;
+   }
 
-        try
-        {
-            // Simulate long-running task
-            await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
-            return Ok("Finished slow request");
-        }
-        catch (OperationCanceledException)
-        {
-            Console.WriteLine("Request was cancelled due to shutdown");
-            return StatusCode(499, "Request cancelled due to shutdown");
-        }
-    }
+   [HttpGet("slow")]
+   public async Task<IActionResult> Slow(CancellationToken cancellationToken)
+   {
+      Console.WriteLine("Started slow request");
 
-    [HttpGet("notfound")]
-    public IActionResult GetNotFound()
-    {
-        return NotFound(new ApiResponse(404));
-    }
+      try
+      {
+         // Simulate long-running task
+         await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+         return Ok("Finished slow request");
+      }
+      catch (OperationCanceledException)
+      {
+         Console.WriteLine("Request was cancelled due to shutdown");
+         return StatusCode(499, "Request cancelled due to shutdown");
+      }
+   }
 
-    [HttpGet("validationerror")]
-    public IActionResult GetValidationError()
-    {
-        var errors = new List<string>
+   [HttpGet("notfound")]
+   public IActionResult GetNotFound()
+   {
+      return NotFound(new ApiResponse(404));
+   }
+
+   [HttpGet("validationerror")]
+   public IActionResult GetValidationError()
+   {
+      var errors = new List<string>
         {
             "Name is required",
             "Email must be a valid email address"
         };
 
-        var validationErrorResponse = new ApiValidationErrorResponse
-        {
-            Errors = errors
-        };
+      var validationErrorResponse = new ApiValidationErrorResponse
+      {
+         Errors = errors
+      };
 
-        return BadRequest(validationErrorResponse);
-    }
+      return BadRequest(validationErrorResponse);
+   }
 
-    [HttpGet("servererror")]
-    public IActionResult GetServerError()
-    {
-        throw new Exception("This is a server error for testing purposes");
-    }
+   [HttpGet("servererror")]
+   public IActionResult GetServerError()
+   {
+      throw new Exception("This is a server error for testing purposes");
+   }
 
-    [HttpGet("badrequest")]
-    public IActionResult GetBadRequest()
-    {
-        return BadRequest(new ApiResponse(400));
-    }
+   [HttpGet("badrequest")]
+   public IActionResult GetBadRequest()
+   {
+      return BadRequest(new ApiResponse(400));
+   }
+
+   [HttpGet("redis-test")]
+   public async Task<IActionResult> GetRedisAsync()
+   {
+      bool connected = await _cacheRepo.PingAsync();
+
+      if (!connected)
+         throw new Exception("Redis not responding");
+
+      return Ok(new
+      {
+         status = "Connected",
+         message = "Redis is healthy"
+      });
+   }
 }

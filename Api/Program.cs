@@ -7,9 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-    options.JsonSerializerOptions.PropertyNamingPolicy = null;
-    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+   options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+   options.JsonSerializerOptions.PropertyNamingPolicy = null;
+   options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 builder.Services.AddAppServices(builder.Configuration);
 

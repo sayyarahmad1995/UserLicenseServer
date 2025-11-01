@@ -6,10 +6,10 @@ namespace Api.Helpers;
 
 public class MappingProfile : Profile
 {
-   public MappingProfile()
-   {
-      CreateMap<User, UserDto>();
+	public MappingProfile()
+	{
+		CreateMap<User, UserDto>();
 
-      CreateMap<License, LicenseDto>();
-   }
+		CreateMap<License, LicenseDto>();
+	}
 }

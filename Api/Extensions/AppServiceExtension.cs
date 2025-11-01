@@ -12,46 +12,46 @@ namespace Api.Extensions;
 
 public static class AppServiceExtension
 {
-   public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration config)
-   {
-      services.AddDbContext<AppDbContext>(opt =>
-      {
-         opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
-      });
+	public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration config)
+	{
+		services.AddDbContext<AppDbContext>(opt =>
+		{
+			opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
+		});
 
-      services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+		services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-      services.AddScoped<ICacheRepository, RedisCacheRepository>();
+		services.AddScoped<ICacheRepository, RedisCacheRepository>();
 
-      services.AddScoped<IUnitOfWork, UnitOfWork>();
+		services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-      services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+		services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-      services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));
+		services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));
 
-      services.AddSingleton<HealthService>();
+		services.AddSingleton<HealthService>();
 
-      services.Configure<ApiBehaviorOptions>(opt =>
-      {
-         opt.InvalidModelStateResponseFactory = ActionContext =>
-           {
-              var errors = ActionContext.ModelState
-                    .Where(e => e.Value?.Errors.Count > 0)
-                    .SelectMany(x => x.Value!.Errors)
-                    .Select(x => x.ErrorMessage)
-                    .ToArray();
+		services.Configure<ApiBehaviorOptions>(opt =>
+		{
+			opt.InvalidModelStateResponseFactory = ActionContext =>
+			{
+				 var errors = ActionContext.ModelState
+					 .Where(e => e.Value?.Errors.Count > 0)
+					 .SelectMany(x => x.Value!.Errors)
+					 .Select(x => x.ErrorMessage)
+					 .ToArray();
 
-              var errorResponse = new ApiValidationErrorResponse { Errors = errors };
-              return new BadRequestObjectResult(errorResponse);
-           };
-      });
+				 var errorResponse = new ApiValidationErrorResponse { Errors = errors };
+				 return new BadRequestObjectResult(errorResponse);
+			 };
+		});
 
-      services.AddSingleton<IConnectionMultiplexer>(sp =>
-      {
-         var redisConfig = config.GetConnectionString("Redis");
-         return ConnectionMultiplexer.Connect(redisConfig!);
-      });
+		services.AddSingleton<IConnectionMultiplexer>(sp =>
+		{
+			var redisConfig = config.GetConnectionString("Redis");
+			return ConnectionMultiplexer.Connect(redisConfig!);
+		});
 
-      return services;
-   }
+		return services;
+	}
 }

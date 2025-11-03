@@ -1,4 +1,5 @@
 using Core.Interfaces;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
 
@@ -9,9 +10,11 @@ public class RedisCacheRepository : ICacheRepository
 	private readonly IDatabase _database;
 	private readonly IConnectionMultiplexer _redis;
 	private readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(200);
+	private readonly ILogger<RedisCacheRepository> _logger;
 
-	public RedisCacheRepository(IConnectionMultiplexer redis)
+	public RedisCacheRepository(IConnectionMultiplexer redis, ILogger<RedisCacheRepository> logger)
 	{
+		_logger = logger;
 		_redis = redis;
 		_database = _redis.GetDatabase();
 	}
@@ -102,16 +105,30 @@ public class RedisCacheRepository : ICacheRepository
 
 	public async Task PublishInvalidationAsync(string key)
 	{
-		var sub = _redis.GetSubscriber();
-		await sub.PublishAsync(RedisChannel.Literal("cache-invalidation"), key);
+		try
+		{
+			var sub = _redis.GetSubscriber();
+			await sub.PublishAsync(RedisChannel.Literal("cache-invalidation"), key);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError($"Redis connection error: {ex.Message}");
+		}
 	}
 
 	public void SubscribeToInvalidations(Func<string, Task> onInvalidation)
 	{
-		var sub = _redis.GetSubscriber();
-		sub.Subscribe(RedisChannel.Literal("cache-invalidation"), async (channel, message) =>
+		try
 		{
-			await onInvalidation(message!);
-		});
+			var sub = _redis.GetSubscriber();
+			sub.Subscribe(RedisChannel.Literal("cache-invalidation"), async (channel, message) =>
+			{
+				await onInvalidation(message!);
+			});
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError($"Redis connection error: {ex.Message}");
+		}
 	}
 }

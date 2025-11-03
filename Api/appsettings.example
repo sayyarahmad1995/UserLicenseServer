@@ -1,20 +1,26 @@
 {
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Information"
-    }
-  },
-  "AllowedHosts": "*",
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;port=5432;Database=exampledb;User Id=postgres;Password=example@123;TrustServerCertificate=True;"
-  },
-  "SeedData": {
-    "AdminUser": {
-      "Username": "admin",
-      "Email": "mail@example.com",
-      "Password": "Admin@123",
-      "Role": "Admin"
-    }
-  }
+	"Logging": {
+		"LogLevel": {
+			"Default": "Information",
+			"Microsoft.AspNetCore": "Information"
+		}
+	},
+	"AllowedHosts": "*",
+	"ConnectionStrings": {
+		"DefaultConnection": "Server=localhost;port=5432;Database=exampledb;User Id=postgres;Password=example@123;TrustServerCertificate=True;",
+		"Redis": "localhost:6379,abortConnect=false,connectTimeout=200,asyncTimeout=200,connectRetry=0"
+	},
+	"SeedData": {
+		"AdminUser": {
+			"Username": "admin",
+			"Email": "mail@example.com",
+			"Password": "Admin@123",
+			"Role": "Admin"
+		}
+	},
+	"Jwt": {
+		"Key": "super_secret_key_1234567890",
+		"Issuer": "MyApp",
+		"Audience": "MyAppUsers"
+	}
 }

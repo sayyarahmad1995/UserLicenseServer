@@ -1,30 +1,40 @@
 using Core.Entities;
 using Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Data;
 
-public class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork : IUnitOfWork
 {
-	private readonly AppDbContext _context;
-	private readonly IServiceProvider _serviceProvider;
-	public UnitOfWork(AppDbContext context, IServiceProvider serviceProvider)
-	{
-		_serviceProvider = serviceProvider;
-		_context = context;
+    private readonly AppDbContext _context;
+    private readonly Dictionary<Type, object> _repositories = new();
+    private UserRepository? _userRepository;
 
-	}
+    public UnitOfWork(AppDbContext context)
+    {
+        _context = context;
+    }
 
-	public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity
-	{
-		return _serviceProvider.GetService<IGenericRepository<TEntity>>()!;
-	}
+    public IUserRepository UserRepository => _userRepository ??= new UserRepository(_context);
 
-	public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
+    public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity
+    {
+        var type = typeof(TEntity);
 
-	public void Dispose()
-	{
-		_context.Dispose();
-		GC.SuppressFinalize(this);
-	}
+        if (!_repositories.ContainsKey(type))
+        {
+            var repoType = typeof(GenericRepository<>).MakeGenericType(type);
+            var repoInstance = Activator.CreateInstance(repoType, _context)!;
+            _repositories[type] = repoInstance;
+        }
+
+        return (IGenericRepository<TEntity>)_repositories[type];
+    }
+
+    public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
+
+    public void Dispose()
+    {
+        _context.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

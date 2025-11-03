@@ -19,8 +19,6 @@ public static class AppServiceExtension
 			opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
 		});
 
-		services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
 		services.AddScoped<ICacheRepository, RedisCacheRepository>();
 
 		services.AddScoped<IUnitOfWork, UnitOfWork>();

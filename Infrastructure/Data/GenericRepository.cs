@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Spec;
@@ -31,6 +32,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 
 	private IQueryable<T> ApplySpecification(ISpecification<T> spec)
 		=> SpecificationEvaluator<T>.GetQuery(_context.Set<T>().AsQueryable(), spec);
+
+	public async Task<T?> FindByEntityAsync(Expression<Func<T, bool>> expression)
+		=> await _context.Set<T>().FirstOrDefaultAsync(expression);
 
 	public void Add(T entity)
 		=> _context.Set<T>().Add(entity);

@@ -1,9 +1,13 @@
+using System.Text.Json.Serialization;
+
 namespace Api.Errors;
 
 public class ApiResponse
 {
 	public int StatusCode { get; set; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Message { get; set; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public object? Data { get; set; }
 
 	public ApiResponse(int statusCode, string? message = null)

@@ -108,7 +108,7 @@ public class UsersController : BaseApiController
 					return BadRequest(new ApiResponse(400, "Invalid status value"));
 			}
 			_unitOfWork.Repository<User>().Update(user);
-			await _unitOfWork.SaveChangesAsync();
+			await _unitOfWork.CompleteAsync();
 
 			var cacheKey = $"user:{id}";
 			await _cacheRepo.PublishInvalidationAsync(cacheKey);

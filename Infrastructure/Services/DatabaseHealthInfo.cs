@@ -1,4 +1,4 @@
-namespace Api.Services;
+namespace Infrastructure.Services;
 
 public class DatabaseHealthInfo
 {

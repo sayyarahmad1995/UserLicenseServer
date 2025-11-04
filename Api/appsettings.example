@@ -7,8 +7,8 @@
 	},
 	"AllowedHosts": "*",
 	"ConnectionStrings": {
-		"DefaultConnection": "Server=localhost;port=5432;Database=exampledb;User Id=postgres;Password=example@123;TrustServerCertificate=True;",
-		"Redis": "localhost:6379,abortConnect=false,connectTimeout=200,asyncTimeout=200,connectRetry=0"
+		"DefaultConnection": "Server=localhost;port=5432;Database=exampledb;User Id=example;Password=example@123;TrustServerCertificate=True;",
+		"Redis": "localhost:6379,abortConnect=false,connectTimeout=100,asyncTimeout=100,connectRetry=0"
 	},
 	"SeedData": {
 		"AdminUser": {
@@ -19,8 +19,10 @@
 		}
 	},
 	"Jwt": {
-		"Key": "super_secret_key_1234567890",
-		"Issuer": "MyApp",
-		"Audience": "MyAppUsers"
+		"Key": "supersecretkey1234567890",
+		"Issuer": "example",
+		"Audience": "exampleClient",
+		"AccessTokenExpiryMinutes": "15",
+		"RefreshTokenExpiryDays": "30"
 	}
 }

@@ -1,6 +1,6 @@
 using Core.Enums;
 
-namespace Api.DTOs;
+namespace Core.DTOs;
 
 public class LicenseDto
 {

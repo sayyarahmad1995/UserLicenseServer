@@ -1,5 +1,6 @@
 using Api.Errors;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 
@@ -83,5 +84,18 @@ public class TestController : BaseApiController
 			status = "Connected",
 			message = "Redis is healthy"
 		});
+	}
+
+	[HttpGet("auth-check")]
+	[Authorize(Roles = "admin")]
+	public async Task<IActionResult> AuthCheck()
+	{
+		return Ok(new { message = "You hit the protected endpoint successfully." });
+	}
+
+	[HttpGet("claims")]
+	public IActionResult Claims()
+	{
+		return Ok(User.Claims.Select(c => new { c.Type, c.Value }));
 	}
 }

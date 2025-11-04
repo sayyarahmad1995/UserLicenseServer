@@ -1,4 +1,4 @@
-using Api.DTOs;
+using Core.DTOs;
 using Api.Errors;
 using Api.Helpers;
 using AutoMapper;

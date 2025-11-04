@@ -1,4 +1,4 @@
-namespace Api.DTOs;
+namespace Core.DTOs;
 
 public class UserDto
 {

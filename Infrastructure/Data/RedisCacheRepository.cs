@@ -131,4 +131,36 @@ public class RedisCacheRepository : ICacheRepository
 			_logger.LogError($"Redis connection error: {ex.Message}");
 		}
 	}
+
+	public async Task<IEnumerable<string>> SearchKeysAsync(string pattern)
+	{
+		var server = GetServer();
+		if (server == null)
+			return Enumerable.Empty<string>();
+
+		// StackExchange.Redis does not have async key search, so we wrap in Task.Run
+		return await Task.Run(() =>
+		{
+			return server.Keys(pattern: pattern)
+						 .Select(k => k.ToString())
+						 .ToList();
+		});
+	}
+
+	private IServer? GetServer()
+	{
+		try
+		{
+			// Get endpoints and take the first one
+			var endpoints = _redis.GetEndPoints();
+			if (endpoints.Length == 0)
+				return null;
+
+			return _redis.GetServer(endpoints[0]);
+		}
+		catch
+		{
+			return null;
+		}
+	}
 }

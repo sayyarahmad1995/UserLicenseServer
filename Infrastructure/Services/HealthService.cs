@@ -1,7 +1,8 @@
 using Dapper;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 
-namespace Api.Services;
+namespace Infrastructure.Services;
 
 public class HealthService
 {

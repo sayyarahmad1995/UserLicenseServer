@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Api.Errors;
 using Core.Interfaces;
@@ -76,7 +77,7 @@ public static class AppServiceExtension
 				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
 				ValidateLifetime = true,
 				ClockSkew = TimeSpan.Zero,
-				RoleClaimType = "role"
+				RoleClaimType = ClaimTypes.Role
 			};
 
 			options.Events = new JwtBearerEvents
@@ -99,7 +100,7 @@ public static class AppServiceExtension
 			foreach (var role in roles!)
 			{
 				options.AddPolicy(role, policy =>
-					policy.RequireClaim("role", role));
+					policy.RequireClaim(ClaimTypes.Role, role));
 			}
 		});
 

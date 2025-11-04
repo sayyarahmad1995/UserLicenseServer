@@ -1,14 +1,14 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Core.Entities;
 using Core.Interfaces;
 using Core.DTOs;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using Infrastructure.Services.Security;
 using Infrastructure.Services.Models;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Services;
 
@@ -44,7 +44,7 @@ public class TokenService : ITokenService
 		// Add roles dynamically if the user has them
 		if (!string.IsNullOrEmpty(user.Role))
 		{
-			claims.Add(new Claim("role", user.Role));
+			claims.Add(new(ClaimTypes.Role, user.Role));
 		}
 
 		var token = new JwtSecurityToken(

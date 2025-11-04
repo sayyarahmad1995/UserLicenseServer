@@ -28,23 +28,33 @@ public class AuthController : BaseApiController
 			return Unauthorized("Invalid credentials");
 
 		var accessToken = _tokenService.GenerateAccessToken(user);
+		var AccessTokenExpiryMinutes = int.Parse(_config["jwt:AccessTokenExpiryMinutes"]!);
 
 		var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user);
 		var refreshTokenExpiryDays = int.Parse(_config["Jwt:RefreshTokenExpiryDays"]!);
 
-		var cookieOptions = new CookieOptions
+		var refresCookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
 			Secure = false,
 			SameSite = SameSiteMode.None,
 			Expires = DateTime.UtcNow.AddDays(refreshTokenExpiryDays)
 		};
-		Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+		Response.Cookies.Append("refreshToken", refreshToken, refresCookieOptions);
+
+		var accessCookiesOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = false,
+			SameSite = SameSiteMode.None,
+			Expires = DateTime.UtcNow.AddMinutes(AccessTokenExpiryMinutes)
+		};
+		Response.Cookies.Append("accessToken", accessToken, accessCookiesOptions);
 
 		return Ok(new
 		{
 			AccessToken = accessToken,
-			AccessTokenExpires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!))
+			AccessTokenExpires = AccessTokenExpiryMinutes
 		});
 	}
 

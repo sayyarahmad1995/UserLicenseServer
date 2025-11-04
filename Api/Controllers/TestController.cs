@@ -87,7 +87,7 @@ public class TestController : BaseApiController
 	}
 
 	[HttpGet("auth-check")]
-	[Authorize(Roles = "admin")]
+	[Authorize(Roles = "Admin")]
 	public async Task<IActionResult> AuthCheck()
 	{
 		return Ok(new { message = "You hit the protected endpoint successfully." });

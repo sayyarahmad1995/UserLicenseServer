@@ -7,7 +7,7 @@
 	},
 	"AllowedHosts": "*",
 	"ConnectionStrings": {
-		"DefaultConnection": "Server=localhost;port=5432;Database=exampledb;User Id=example;Password=example@123;TrustServerCertificate=True;",
+		"DefaultConnection": "Server=localhost;port=5432;Database=example;User Id=example;Password=example@123;TrustServerCertificate=True;",
 		"Redis": "localhost:6379,abortConnect=false,connectTimeout=100,asyncTimeout=100,connectRetry=0"
 	},
 	"SeedData": {
@@ -20,9 +20,10 @@
 	},
 	"Jwt": {
 		"Key": "supersecretkey1234567890",
-		"Issuer": "example",
-		"Audience": "exampleClient",
+		"Issuer": "localhost",
+		"Audience": "localhostClient",
 		"AccessTokenExpiryMinutes": "15",
-		"RefreshTokenExpiryDays": "30"
+		"RefreshTokenExpiryDays": "30",
+		"Roles": [ "Admin", "User", "Manager" ]
 	}
 }

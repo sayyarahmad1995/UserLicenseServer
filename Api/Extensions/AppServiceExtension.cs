@@ -4,6 +4,7 @@ using Api.Errors;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
+using Infrastructure.Interfaces;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +25,6 @@ public static class AppServiceExtension
 		});
 
 		services.AddScoped<ICacheRepository, RedisCacheRepository>();
-
 		services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 		services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -34,6 +34,7 @@ public static class AppServiceExtension
 		services.AddSingleton<HealthService>();
 
 		services.AddScoped<ITokenService, TokenService>();
+		services.AddScoped<IAuthHelper, AuthHelper>();
 
 		services.Configure<ApiBehaviorOptions>(opt =>
 		{
@@ -49,17 +50,15 @@ public static class AppServiceExtension
 				return new BadRequestObjectResult(errorResponse);
 			};
 		});
-
+		
 		services.AddSingleton<IConnectionMultiplexer>(sp =>
 		{
 			var redisConfig = config.GetConnectionString("Redis");
 			return ConnectionMultiplexer.Connect(redisConfig!);
 		});
-
 		var jwtKey = config["Jwt:Key"];
 		var jwtIssuer = config["Jwt:Issuer"];
 		var jwtAudience = config["Jwt:Audience"];
-
 		services.AddAuthentication(options =>
 		{
 			options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -79,7 +78,6 @@ public static class AppServiceExtension
 				ClockSkew = TimeSpan.Zero,
 				RoleClaimType = ClaimTypes.Role
 			};
-
 			options.Events = new JwtBearerEvents
 			{
 				OnMessageReceived = context =>
@@ -93,7 +91,6 @@ public static class AppServiceExtension
 				}
 			};
 		});
-
 		var roles = config.GetSection("Jwt:Roles").Get<string[]>();
 		services.AddAuthorization(options =>
 		{

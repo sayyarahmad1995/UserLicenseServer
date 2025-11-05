@@ -25,7 +25,6 @@ public class TestController : BaseApiController
 
 		try
 		{
-			// Simulate long-running task
 			await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
 			return Ok("Finished slow request");
 		}
@@ -90,6 +89,7 @@ public class TestController : BaseApiController
 	[Authorize(Roles = "Admin")]
 	public async Task<IActionResult> AuthCheck()
 	{
+		await Task.CompletedTask;
 		return Ok(new { message = "You hit the protected endpoint successfully." });
 	}
 

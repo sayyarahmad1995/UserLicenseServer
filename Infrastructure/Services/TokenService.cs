@@ -1,13 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using Core.DTOs;
 using Core.Entities;
 using Core.Interfaces;
-using Core.DTOs;
-using Microsoft.Extensions.Configuration;
-using System.Security.Cryptography;
-using Infrastructure.Services.Security;
 using Infrastructure.Services.Models;
-using System.IdentityModel.Tokens.Jwt;
+using Infrastructure.Services.Security;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Services;
@@ -20,32 +20,23 @@ public class TokenService : ITokenService
 
 	public TokenService(IConfiguration config, ICacheRepository cache, IUnitOfWork unitOfWork)
 	{
-		_unitOfWork = unitOfWork;
 		_config = config;
 		_cache = cache;
+		_unitOfWork = unitOfWork;
 	}
 
-	/// <summary>
-	/// Generates a JWT access token for the given user
-	/// </summary>
 	public string GenerateAccessToken(User user)
 	{
-		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-		// Base claims
 		var claims = new List<Claim>
 		{
-			new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-			new(JwtRegisteredClaimNames.Email, user.Email!),
+			new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+			new(ClaimTypes.Email, user.Email!),
+			new(ClaimTypes.Role, user.Role!),
 			new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 		};
 
-		// Add roles dynamically if the user has them
-		if (!string.IsNullOrEmpty(user.Role))
-		{
-			claims.Add(new(ClaimTypes.Role, user.Role));
-		}
+		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 		var token = new JwtSecurityToken(
 			issuer: _config["Jwt:Issuer"],
@@ -58,29 +49,21 @@ public class TokenService : ITokenService
 		return new JwtSecurityTokenHandler().WriteToken(token);
 	}
 
-
-	public async Task<string> GenerateRefreshTokenAsync(User user)
+	public async Task<string> GenerateRefreshTokenAsync(User user, string jti)
 	{
-		var randomBytes = new byte[32];
-		using var rng = RandomNumberGenerator.Create();
-		rng.GetBytes(randomBytes);
-		var refreshToken = Convert.ToBase64String(randomBytes);
-
+		var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 		var hashedToken = TokenHasher.HashToken(refreshToken);
 
-		var tokenId = Guid.NewGuid().ToString();
 		var tokenModel = new RefreshToken
 		{
-			TokenId = tokenId,
 			UserId = user.Id.ToString(),
 			TokenHash = hashedToken,
-			Created = DateTime.UtcNow,
+			CreatedAt = DateTime.UtcNow,
 			Expires = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:RefreshTokenExpiryDays"]!)),
-			Revoked = false
+			Jti = jti
 		};
 
-		var key = $"refresh:{user.Id}:{tokenId}";
-
+		var key = $"session:{user.Id}:{jti}";
 		await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
 
 		return refreshToken;
@@ -90,9 +73,9 @@ public class TokenService : ITokenService
 	{
 		var hashedToken = TokenHasher.HashToken(refreshToken);
 
-		var keys = await _cache.SearchKeysAsync("refresh:*");
-
+		var keys = await _cache.SearchKeysAsync("session:*");
 		RefreshToken? matchedToken = null;
+		string? matchedKey = null;
 
 		foreach (var key in keys)
 		{
@@ -100,6 +83,7 @@ public class TokenService : ITokenService
 			if (tokenModel != null && tokenModel.TokenHash == hashedToken)
 			{
 				matchedToken = tokenModel;
+				matchedKey = key;
 				break;
 			}
 		}
@@ -107,22 +91,28 @@ public class TokenService : ITokenService
 		if (matchedToken == null)
 			throw new Exception("Refresh token not found.");
 
-		if (matchedToken.Revoked || matchedToken.Expires < DateTime.UtcNow)
-			throw new Exception("Invalid or expired refresh token.");
+		if (matchedToken.Revoked)
+			throw new Exception("This refresh token has already been used or revoked.");
+
+		if (matchedToken.Expires < DateTime.UtcNow)
+			throw new Exception("Refresh token has expired.");
 
 		var userId = int.Parse(matchedToken.UserId);
 		var user = await _unitOfWork.Repository<User>().GetByIdAsync(userId)
-				   ?? throw new Exception("User not found.");
+			?? throw new Exception("User not found.");
 
 		var newAccessToken = GenerateAccessToken(user);
+		var jwt = new JwtSecurityTokenHandler().ReadJwtToken(newAccessToken);
+		var newJti = jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
 
-		var newRefreshToken = await GenerateRefreshTokenAsync(user);
+		var newRefreshToken = await GenerateRefreshTokenAsync(user, newJti);
 
 		matchedToken.Revoked = true;
 		matchedToken.RevokedAt = DateTime.UtcNow;
-		matchedToken.ReplacedByTokenId = Guid.NewGuid().ToString();
-		var oldKey = $"refresh:{user.Id}:{matchedToken.TokenId}";
-		await _cache.SetAsync(oldKey, matchedToken, matchedToken.Expires - DateTime.UtcNow);
+		matchedToken.ReplacedByTokenId = newJti;
+
+		if (matchedKey != null)
+			await _cache.SetAsync(matchedKey, matchedToken, matchedToken.Expires - DateTime.UtcNow);
 
 		return new TokenResponseDto
 		{
@@ -133,33 +123,32 @@ public class TokenService : ITokenService
 		};
 	}
 
-	public async Task RevokeRefreshTokenAsync(string tokenId)
+	public async Task RevokeSessionAsync(int userId, string jti)
 	{
-		var key = $"refresh:{tokenId}";
+		var key = $"session:{userId}:{jti}";
+		var token = await _cache.GetAsync<RefreshToken>(key)
+			?? throw new Exception("Session not found.");
 
-		var tokenModel = await _cache.GetAsync<RefreshToken>(key) ?? throw new Exception("Refresh token not found.");
-		tokenModel.Revoked = true;
-		tokenModel.RevokedAt = DateTime.UtcNow;
+		if (token.Revoked) return;
 
-		var expiry = tokenModel.Expires - DateTime.UtcNow;
-		await _cache.SetAsync(key, tokenModel, expiry > TimeSpan.Zero ? expiry : TimeSpan.Zero);
+		token.Revoked = true;
+		token.RevokedAt = DateTime.UtcNow;
+		await _cache.SetAsync(key, token, token.Expires - DateTime.UtcNow);
 	}
 
-	public async Task<bool> IsRefreshTokenValidAsync(string refreshToken, string tokenId)
+	public async Task RevokeAllSessionsAsync(int userId)
 	{
-		var key = $"refresh:{tokenId}";
+		var keys = await _cache.SearchKeysAsync($"session:{userId}:*");
 
-		var tokenModel = await _cache.GetAsync<RefreshToken>(key);
-		if (tokenModel == null)
-			return false;
-
-		if (tokenModel.Revoked || tokenModel.Expires < DateTime.UtcNow)
-			return false;
-
-		var hashedToken = TokenHasher.HashToken(refreshToken);
-		if (tokenModel.TokenHash != hashedToken)
-			return false;
-
-		return true;
+		foreach (var key in keys)
+		{
+			var token = await _cache.GetAsync<RefreshToken>(key);
+			if (token != null && !token.Revoked)
+			{
+				token.Revoked = true;
+				token.RevokedAt = DateTime.UtcNow;
+				await _cache.SetAsync(key, token, token.Expires - DateTime.UtcNow);
+			}
+		}
 	}
 }

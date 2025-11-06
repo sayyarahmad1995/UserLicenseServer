@@ -85,7 +85,7 @@ public class UsersController : BaseApiController
 	{
 		var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
 		if (user == null)
-			return Fail("User not found", 404);
+			return ApiResult.Fail("User not found", 404);
 		var status = dto.Status.Trim().ToLower();
 
 		try

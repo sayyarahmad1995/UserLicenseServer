@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Api.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -9,44 +10,44 @@ public class TestController : BaseApiController
     public IActionResult GetOk()
     {
         var data = new { Id = 1, Message = "Everything is working fine" };
-        return Success(data, "Success response example");
+        return ApiResult.Success(data, "Success response example");
     }
 
     [HttpPost("created")]
     public IActionResult CreateSomething()
     {
         var newItem = new { Id = 42, Name = "New Resource" };
-        return CreatedResponse(newItem, "Resource created successfully");
+        return ApiResult.Created(newItem, "Resource created successfully");
     }
 
     [HttpDelete("delete/{id}")]
     public IActionResult DeleteSomething(int id)
     {
-        return NoContentResponse($"Item {id} deleted successfully");
+        return ApiResult.NoContent($"Item {id} deleted successfully");
     }
 
     [HttpGet("badrequest")]
     public IActionResult BadRequestExample()
     {
-        return Fail("This is a bad request example");
+        return ApiResult.Fail("This is a bad request example");
     }
 
     [HttpGet("unauthorized")]
     public IActionResult UnauthorizedExample()
     {
-        return Fail("You are not authorized", 401);
+        return ApiResult.Fail("You are not authorized", 401);
     }
 
     [HttpGet("notfound")]
     public IActionResult NotFoundExample()
     {
-        return Fail("Resource not found", 404);
+        return ApiResult.Fail("Resource not found", 404);
     }
 
     [HttpGet("servererror")]
     public IActionResult ServerErrorExample()
     {
-        return ServerError("Manual server error for testing", "Stack trace or extra info could go here");
+        return ApiResult.ServerError("Manual server error for testing", "Stack trace or extra info could go here");
     }
 
     [HttpGet("throw")]
@@ -58,7 +59,7 @@ public class TestController : BaseApiController
     [HttpPost("validate")]
     public IActionResult ValidateExample([FromBody] TestValidationDto dto)
     {
-        return Success(dto, "Validation passed successfully");
+        return ApiResult.Success(dto, "Validation passed successfully");
     }
 }
 

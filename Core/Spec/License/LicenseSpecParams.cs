@@ -13,6 +13,8 @@ public class LicenseSpecParams
 	public int? UserId { get; set; }
 	public DateTime? CreatedAfter { get; set; }
 	public DateTime? CreatedBefore { get; set; }
+	public DateTime? ExpiredAfter { get; set; }
+	public DateTime? ExpiredBefore { get; set; }
 	public string? Status { get; set; }
 	public string? Sort { get; set; }
 	private string? _search;

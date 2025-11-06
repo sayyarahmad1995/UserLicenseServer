@@ -1,101 +1,76 @@
-using Api.Errors;
-using Core.Interfaces;
-using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using StackExchange.Redis;
 
 namespace Api.Controllers;
 
 public class TestController : BaseApiController
 {
-	private readonly ICacheRepository _cacheRepo;
-	private readonly IUnitOfWork _unitOfWork;
-	private readonly IConnectionMultiplexer _redis;
-	public TestController(IUnitOfWork unitOfWork, ICacheRepository cacheRepo, IConnectionMultiplexer redis)
-	{
-		_redis = redis;
-		_unitOfWork = unitOfWork;
-		_cacheRepo = cacheRepo;
-	}
+    [HttpGet("ok")]
+    public IActionResult GetOk()
+    {
+        var data = new { Id = 1, Message = "Everything is working fine" };
+        return Success(data, "Success response example");
+    }
 
-	[HttpGet("slow")]
-	public async Task<IActionResult> Slow(CancellationToken cancellationToken)
-	{
-		Console.WriteLine("Started slow request");
+    [HttpPost("created")]
+    public IActionResult CreateSomething()
+    {
+        var newItem = new { Id = 42, Name = "New Resource" };
+        return CreatedResponse(newItem, "Resource created successfully");
+    }
 
-		try
-		{
-			await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
-			return Ok("Finished slow request");
-		}
-		catch (OperationCanceledException)
-		{
-			Console.WriteLine("Request was cancelled due to shutdown");
-			return StatusCode(499, "Request cancelled due to shutdown");
-		}
-	}
+    [HttpDelete("delete/{id}")]
+    public IActionResult DeleteSomething(int id)
+    {
+        return NoContentResponse($"Item {id} deleted successfully");
+    }
 
-	[HttpGet("notfound")]
-	public IActionResult GetNotFound()
-	{
-		return NotFound(new ApiResponse(404));
-	}
+    [HttpGet("badrequest")]
+    public IActionResult BadRequestExample()
+    {
+        return Fail("This is a bad request example");
+    }
 
-	[HttpGet("validationerror")]
-	public IActionResult GetValidationError()
-	{
-		var errors = new List<string>
-		{
-			"Name is required",
-			"Email must be a valid email address"
-		};
+    [HttpGet("unauthorized")]
+    public IActionResult UnauthorizedExample()
+    {
+        return Fail("You are not authorized", 401);
+    }
 
-		var validationErrorResponse = new ApiValidationErrorResponse
-		{
-			Errors = errors
-		};
+    [HttpGet("notfound")]
+    public IActionResult NotFoundExample()
+    {
+        return Fail("Resource not found", 404);
+    }
 
-		return BadRequest(validationErrorResponse);
-	}
+    [HttpGet("servererror")]
+    public IActionResult ServerErrorExample()
+    {
+        return ServerError("Manual server error for testing", "Stack trace or extra info could go here");
+    }
 
-	[HttpGet("servererror")]
-	public IActionResult GetServerError()
-	{
-		throw new Exception("This is a server error for testing purposes");
-	}
+    [HttpGet("throw")]
+    public IActionResult ThrowErrorExample()
+    {
+        throw new Exception("This is a simulated unhandled exception");
+    }
 
-	[HttpGet("badrequest")]
-	public IActionResult GetBadRequest()
-	{
-		return BadRequest(new ApiResponse(400));
-	}
+    [HttpPost("validate")]
+    public IActionResult ValidateExample([FromBody] TestValidationDto dto)
+    {
+        return Success(dto, "Validation passed successfully");
+    }
+}
 
-	[HttpGet("redis-test")]
-	public async Task<IActionResult> GetRedisAsync()
-	{
-		bool connected = await _cacheRepo.PingAsync();
+public class TestValidationDto
+{
+    [Required(ErrorMessage = "Name is required")]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = "Name must be between 3 and 50 characters")]
+    public string? Name { get; set; }
 
-		if (!connected)
-			throw new Exception("Redis not responding");
+    [Range(18, 60, ErrorMessage = "Age must be between 18 and 60")]
+    public int Age { get; set; }
 
-		return Ok(new
-		{
-			status = "Connected",
-			message = "Redis is healthy"
-		});
-	}
-
-	[HttpGet("auth-check")]
-	[Authorize(Roles = "Admin")]
-	public async Task<IActionResult> AuthCheck()
-	{
-		await Task.CompletedTask;
-		return Ok(new { message = "You hit the protected endpoint successfully." });
-	}
-
-	[HttpGet("claims")]
-	public IActionResult Claims()
-	{
-		return Ok(User.Claims.Select(c => new { c.Type, c.Value }));
-	}
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    public string? Email { get; set; }
 }

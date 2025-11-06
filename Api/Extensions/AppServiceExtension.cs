@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using Api.Errors;
 using Core.Interfaces;
 using Infrastructure.Data;
@@ -24,6 +25,13 @@ public static class AppServiceExtension
 			opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
 		});
 
+		services.AddControllers().AddJsonOptions(options =>
+		{
+			options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+			options.JsonSerializerOptions.PropertyNamingPolicy = null;
+			options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+		});
+
 		services.AddScoped<ICacheRepository, RedisCacheRepository>();
 		services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -38,19 +46,21 @@ public static class AppServiceExtension
 
 		services.Configure<ApiBehaviorOptions>(opt =>
 		{
-			opt.InvalidModelStateResponseFactory = ActionContext =>
+			opt.InvalidModelStateResponseFactory = context =>
 			{
-				var errors = ActionContext.ModelState
+				var errors = context.ModelState
 					.Where(e => e.Value?.Errors.Count > 0)
-					.SelectMany(x => x.Value!.Errors)
-					.Select(x => x.ErrorMessage)
-					.ToArray();
+					.ToDictionary(
+						kvp => kvp.Key,
+						kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+					);
 
 				var errorResponse = new ApiValidationErrorResponse { Errors = errors };
 				return new BadRequestObjectResult(errorResponse);
 			};
+			opt.SuppressMapClientErrors = true;
 		});
-		
+
 		services.AddSingleton<IConnectionMultiplexer>(sp =>
 		{
 			var redisConfig = config.GetConnectionString("Redis");

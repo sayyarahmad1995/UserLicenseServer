@@ -30,18 +30,15 @@ public class ExceptionMiddleware
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "An unhandled exception occurred: {Message}", ex.Message);
-
+			_logger.LogError(ex, ex.Message);
 			context.Response.ContentType = "application/json";
 			context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
 			var response = _env.IsDevelopment()
-				? new ApiException((int)HttpStatusCode.InternalServerError, ex.Message, ex.StackTrace)
-				: new ApiException((int)HttpStatusCode.InternalServerError, null);
+				? new ApiException(500, ex.Message, ex.StackTrace?.ToString())
+				: new ApiException(500, "An internal server error occurred");
 
-			var json = JsonSerializer.Serialize(response, _jsonOptions);
-
-			await context.Response.WriteAsync(json);
+			await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
 		}
 	}
 }

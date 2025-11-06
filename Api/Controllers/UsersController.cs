@@ -6,9 +6,11 @@ using Core.Entities;
 using Core.Interfaces;
 using Core.Spec;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers;
 
+[Authorize(Roles = "Admin")]
 public class UsersController : BaseApiController
 {
 	private readonly IUnitOfWork _unitOfWork;
@@ -78,13 +80,13 @@ public class UsersController : BaseApiController
 		return Ok(userDto);
 	}
 
-	[HttpPatch("{id}/{status}")]
-	public async Task<ActionResult<UserDto>> UserStatus(int id, string status)
+	[HttpPatch("{id}/status")]
+	public async Task<IActionResult> UserStatus(int id, [FromBody] StatusUpdateDto dto)
 	{
 		var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
 		if (user == null)
-			return NotFound(new ApiResponse(404, "User not found"));
-		status = status.Trim().ToLower();
+			return Fail("User not found", 404);
+		var status = dto.Status.Trim().ToLower();
 
 		try
 		{

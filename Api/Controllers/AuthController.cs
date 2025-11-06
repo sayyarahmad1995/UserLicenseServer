@@ -4,8 +4,6 @@ using Api.Errors;
 using Core.DTOs;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
-using Infrastructure.Services.Models;
-using Infrastructure.Services.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -72,39 +70,6 @@ public class AuthController : BaseApiController
 			Message = "Token refreshed successfully",
 			result.AccessTokenExpires
 		});
-	}
-
-	[HttpPost("revoke")]
-	public async Task<IActionResult> Revoke()
-	{
-		if (!_authHelper.TryGetCookie(Request, "refreshToken", out var refreshToken))
-			return BadRequest(new ApiResponse(400, "Refresh token missing"));
-
-		try
-		{
-			var hashed = TokenHasher.HashToken(refreshToken!);
-			var keys = await _cacheRepo.SearchKeysAsync("user:*:session:*");
-
-			foreach (var key in keys)
-			{
-				var token = await _cacheRepo.GetAsync<RefreshToken>(key);
-				if (token != null && token.TokenHash == hashed)
-				{
-					token.Revoked = true;
-					token.RevokedAt = DateTime.UtcNow;
-					await _cacheRepo.SetAsync(key, token, token.Expires - DateTime.UtcNow);
-					break;
-				}
-			}
-
-			_authHelper.ClearAuthCookies(Response);
-
-			return Ok(new { message = "Session revoked successfully." });
-		}
-		catch (Exception ex)
-		{
-			return BadRequest(new ApiResponse(ex.HResult, ex.Message));
-		}
 	}
 
 	[HttpPost("logout")]

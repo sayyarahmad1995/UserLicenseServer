@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 [Route("error/{code}")]
 [AllowAnonymous]

@@ -1,7 +1,9 @@
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using Api.Errors;
+using Api.Filters;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 
 
@@ -25,7 +28,11 @@ public static class AppServiceExtension
 			opt.UseNpgsql(config.GetConnectionString("DefaultConnection"));
 		});
 
-		services.AddControllers().AddJsonOptions(options =>
+		services.AddControllers(options =>
+		{
+			options.Filters.Add<ValidateSessionFilter>();
+		})
+		.AddJsonOptions(options =>
 		{
 			options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 			options.JsonSerializerOptions.PropertyNamingPolicy = null;
@@ -109,6 +116,11 @@ public static class AppServiceExtension
 				options.AddPolicy(role, policy =>
 					policy.RequireClaim(ClaimTypes.Role, role));
 			}
+		});
+
+		services.AddSwaggerGen(c =>
+		{
+			c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserLicenseServer", Version = "v2" });
 		});
 
 		return services;

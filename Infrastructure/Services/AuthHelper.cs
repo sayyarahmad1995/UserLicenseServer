@@ -14,16 +14,16 @@ public class AuthHelper : IAuthHelper
 		var accessOptions = new CookieOptions
 		{
 			HttpOnly = true,
-			Secure = false, // ⚠️ Set true in production
-			SameSite = SameSiteMode.None,
+			Secure = true,
+			SameSite = SameSiteMode.Strict,
 			Expires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
 		};
 
 		var refreshOptions = new CookieOptions
 		{
 			HttpOnly = true,
-			Secure = false, // ⚠️ Set true in production
-			SameSite = SameSiteMode.None,
+			Secure = true,
+			SameSite = SameSiteMode.Strict,
 			Expires = DateTime.UtcNow.AddDays(refreshExpiryDays)
 		};
 

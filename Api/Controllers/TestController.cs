@@ -6,72 +6,72 @@ namespace Api.Controllers;
 
 public class TestController : BaseApiController
 {
-    [HttpGet("ok")]
-    public IActionResult GetOk()
-    {
-        var data = new { Id = 1, Message = "Everything is working fine" };
-        return ApiResult.Success(data, "Success response example");
-    }
+   [HttpGet("ok")]
+   public IActionResult GetOk()
+   {
+      var data = new { Id = 1, Message = "Everything is working fine" };
+      return ApiResult.Success(data, "Success response example");
+   }
 
-    [HttpPost("created")]
-    public IActionResult CreateSomething()
-    {
-        var newItem = new { Id = 42, Name = "New Resource" };
-        return ApiResult.Created(newItem, "Resource created successfully");
-    }
+   [HttpPost("created")]
+   public IActionResult CreateSomething()
+   {
+      var newItem = new { Id = 42, Name = "New Resource" };
+      return ApiResult.Created(newItem, "Resource created successfully");
+   }
 
-    [HttpDelete("delete/{id}")]
-    public IActionResult DeleteSomething(int id)
-    {
-        return ApiResult.NoContent($"Item {id} deleted successfully");
-    }
+   [HttpDelete("delete/{id}")]
+   public IActionResult DeleteSomething(int id)
+   {
+      return ApiResult.NoContent($"Item {id} deleted successfully");
+   }
 
-    [HttpGet("badrequest")]
-    public IActionResult BadRequestExample()
-    {
-        return ApiResult.Fail("This is a bad request example");
-    }
+   [HttpGet("badrequest")]
+   public IActionResult BadRequestExample()
+   {
+      return ApiResult.Fail("This is a bad request example");
+   }
 
-    [HttpGet("unauthorized")]
-    public IActionResult UnauthorizedExample()
-    {
-        return ApiResult.Fail("You are not authorized", 401);
-    }
+   [HttpGet("unauthorized")]
+   public IActionResult UnauthorizedExample()
+   {
+      return ApiResult.Fail("You are not authorized", 401);
+   }
 
-    [HttpGet("notfound")]
-    public IActionResult NotFoundExample()
-    {
-        return ApiResult.Fail("Resource not found", 404);
-    }
+   [HttpGet("notfound")]
+   public IActionResult NotFoundExample()
+   {
+      return ApiResult.Fail("Resource not found", 404);
+   }
 
-    [HttpGet("servererror")]
-    public IActionResult ServerErrorExample()
-    {
-        return ApiResult.ServerError("Manual server error for testing", "Stack trace or extra info could go here");
-    }
+   [HttpGet("servererror")]
+   public IActionResult ServerErrorExample()
+   {
+      return ApiResult.ServerError("Manual server error for testing", "Stack trace or extra info could go here");
+   }
 
-    [HttpGet("throw")]
-    public IActionResult ThrowErrorExample()
-    {
-        throw new Exception("This is a simulated unhandled exception");
-    }
+   [HttpGet("throw")]
+   public IActionResult ThrowErrorExample()
+   {
+      throw new Exception("This is a simulated unhandled exception");
+   }
 
-    [HttpPost("validate")]
-    public IActionResult ValidateExample([FromBody] TestValidationDto dto)
-    {
-        return ApiResult.Success(dto, "Validation passed successfully");
-    }
+   [HttpPost("validate")]
+   public IActionResult ValidateExample([FromBody] TestValidationDto dto)
+   {
+      return ApiResult.Success(dto, "Validation passed successfully");
+   }
 }
 
 public class TestValidationDto
 {
-    [Required(ErrorMessage = "Name is required")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "Name must be between 3 and 50 characters")]
-    public string? Name { get; set; }
+   [Required(ErrorMessage = "Name is required")]
+   [StringLength(50, MinimumLength = 3, ErrorMessage = "Name must be between 3 and 50 characters")]
+   public string? Name { get; set; }
 
-    [Range(18, 60, ErrorMessage = "Age must be between 18 and 60")]
-    public int Age { get; set; }
+   [Range(18, 60, ErrorMessage = "Age must be between 18 and 60")]
+   public int Age { get; set; }
 
-    [EmailAddress(ErrorMessage = "Invalid email format")]
-    public string? Email { get; set; }
+   [EmailAddress(ErrorMessage = "Invalid email format")]
+   public string? Email { get; set; }
 }

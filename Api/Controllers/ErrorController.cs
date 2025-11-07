@@ -11,9 +11,9 @@ namespace Api.Controllers;
 [IgnoreAntiforgeryToken]
 public class ErrorController : ControllerBase
 {
-	[HttpGet, HttpPost, HttpPut, HttpDelete, HttpPatch, HttpOptions, HttpHead]
-	public IActionResult HandleError(int code)
-	{
-		return new ObjectResult(new ApiResponse(code));
-	}
+   [HttpGet, HttpPost, HttpPut, HttpDelete, HttpPatch, HttpOptions, HttpHead]
+   public IActionResult HandleError(int code)
+   {
+      return new ObjectResult(new ApiResponse(code));
+   }
 }

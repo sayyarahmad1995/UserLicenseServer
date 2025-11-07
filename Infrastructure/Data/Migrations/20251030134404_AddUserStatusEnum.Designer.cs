@@ -11,128 +11,128 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Infrastructure.Data.Migrations
 {
-	[DbContext(typeof(AppDbContext))]
-	[Migration("20251030134404_AddUserStatusEnum")]
-	partial class AddUserStatusEnum
-	{
-		/// <inheritdoc />
-		protected override void BuildTargetModel(ModelBuilder modelBuilder)
-		{
+   [DbContext(typeof(AppDbContext))]
+   [Migration("20251030134404_AddUserStatusEnum")]
+   partial class AddUserStatusEnum
+   {
+      /// <inheritdoc />
+      protected override void BuildTargetModel(ModelBuilder modelBuilder)
+      {
 #pragma warning disable 612, 618
-			modelBuilder
-				.HasAnnotation("ProductVersion", "9.0.10")
-				.HasAnnotation("Relational:MaxIdentifierLength", 63);
+         modelBuilder
+            .HasAnnotation("ProductVersion", "9.0.10")
+            .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-			NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-			modelBuilder.Entity("Core.Entities.License", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("integer");
+         modelBuilder.Entity("Core.Entities.License", b =>
+            {
+               b.Property<int>("Id")
+                  .ValueGeneratedOnAdd()
+                  .HasColumnType("integer");
 
-					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+               NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-					b.Property<DateTime>("CreatedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime>("CreatedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<DateTime>("ExpiresAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime>("ExpiresAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<string>("LicenseKey")
-						.IsRequired()
-						.HasMaxLength(200)
-						.HasColumnType("character varying(200)");
+               b.Property<string>("LicenseKey")
+                  .IsRequired()
+                  .HasMaxLength(200)
+                  .HasColumnType("character varying(200)");
 
-					b.Property<DateTime?>("RevokedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime?>("RevokedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<string>("Status")
-						.IsRequired()
-						.HasColumnType("text");
+               b.Property<string>("Status")
+                  .IsRequired()
+                  .HasColumnType("text");
 
-					b.Property<int>("UserId")
-						.HasColumnType("integer");
+               b.Property<int>("UserId")
+                  .HasColumnType("integer");
 
-					b.HasKey("Id");
+               b.HasKey("Id");
 
-					b.HasIndex("UserId", "Status")
-						.IsUnique()
-						.HasDatabaseName("IX_Licenses_UserId_Status_Active")
-						.HasFilter("\"Status\" = 'Active'");
+               b.HasIndex("UserId", "Status")
+                  .IsUnique()
+                  .HasDatabaseName("IX_Licenses_UserId_Status_Active")
+                  .HasFilter("\"Status\" = 'Active'");
 
-					b.HasIndex("UserId", "Status", "ExpiresAt");
+               b.HasIndex("UserId", "Status", "ExpiresAt");
 
-					b.ToTable("Licenses", (string)null);
-				});
+               b.ToTable("Licenses", (string)null);
+            });
 
-			modelBuilder.Entity("Core.Entities.User", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("integer");
+         modelBuilder.Entity("Core.Entities.User", b =>
+            {
+               b.Property<int>("Id")
+                  .ValueGeneratedOnAdd()
+                  .HasColumnType("integer");
 
-					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+               NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-					b.Property<DateTime?>("BlockedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime?>("BlockedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<DateTime>("CreatedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime>("CreatedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<string>("Email")
-						.IsRequired()
-						.HasMaxLength(200)
-						.HasColumnType("character varying(200)");
+               b.Property<string>("Email")
+                  .IsRequired()
+                  .HasMaxLength(200)
+                  .HasColumnType("character varying(200)");
 
-					b.Property<DateTime?>("LastLogin")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime?>("LastLogin")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<string>("PasswordHash")
-						.IsRequired()
-						.HasColumnType("text");
+               b.Property<string>("PasswordHash")
+                  .IsRequired()
+                  .HasColumnType("text");
 
-					b.Property<string>("Role")
-						.IsRequired()
-						.HasMaxLength(50)
-						.HasColumnType("character varying(50)");
+               b.Property<string>("Role")
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasColumnType("character varying(50)");
 
-					b.Property<string>("Status")
-						.IsRequired()
-						.HasColumnType("text");
+               b.Property<string>("Status")
+                  .IsRequired()
+                  .HasColumnType("text");
 
-					b.Property<DateTime?>("UpdatedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime?>("UpdatedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.Property<string>("Username")
-						.IsRequired()
-						.HasMaxLength(100)
-						.HasColumnType("character varying(100)");
+               b.Property<string>("Username")
+                  .IsRequired()
+                  .HasMaxLength(100)
+                  .HasColumnType("character varying(100)");
 
-					b.Property<DateTime?>("VerifiedAt")
-						.HasColumnType("timestamp with time zone");
+               b.Property<DateTime?>("VerifiedAt")
+                  .HasColumnType("timestamp with time zone");
 
-					b.HasKey("Id");
+               b.HasKey("Id");
 
-					b.ToTable("Users", (string)null);
-				});
+               b.ToTable("Users", (string)null);
+            });
 
-			modelBuilder.Entity("Core.Entities.License", b =>
-				{
-					b.HasOne("Core.Entities.User", "User")
-						.WithMany("Licenses")
-						.HasForeignKey("UserId")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
+         modelBuilder.Entity("Core.Entities.License", b =>
+            {
+               b.HasOne("Core.Entities.User", "User")
+                  .WithMany("Licenses")
+                  .HasForeignKey("UserId")
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .IsRequired();
 
-					b.Navigation("User");
-				});
+               b.Navigation("User");
+            });
 
-			modelBuilder.Entity("Core.Entities.User", b =>
-				{
-					b.Navigation("Licenses");
-				});
+         modelBuilder.Entity("Core.Entities.User", b =>
+            {
+               b.Navigation("Licenses");
+            });
 #pragma warning restore 612, 618
-		}
-	}
+      }
+   }
 }

@@ -2,5 +2,5 @@ namespace Core.DTOs;
 
 public class RevokeRequestDto
 {
-	public required string RefreshToken { get; set; }
+   public required string RefreshToken { get; set; }
 }

@@ -2,7 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Api.Errors;
 using Api.Helpers;
+using AutoMapper;
 using Core.DTOs;
+using Core.Entities;
+using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +19,11 @@ public class AuthController : BaseApiController
    private readonly IUnitOfWork _unitOfWork;
    private readonly IAuthHelper _authHelper;
    private readonly ILogger<AuthController> _logger;
+   private readonly IMapper _mapper;
 
-   public AuthController(ITokenService tokenService, ILogger<AuthController> logger, IConfiguration config, IUnitOfWork unitOfWork, IAuthHelper authHelper)
+   public AuthController(ITokenService tokenService, ILogger<AuthController> logger, IConfiguration config, IUnitOfWork unitOfWork, IAuthHelper authHelper, IMapper mapper)
    {
+      _mapper = mapper;
       _logger = logger;
       _tokenService = tokenService;
       _config = config;
@@ -59,6 +64,30 @@ public class AuthController : BaseApiController
          Message = "Login successful",
          AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
       });
+   }
+
+   [HttpPost("register")]
+   public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+   {
+      if (!ModelState.IsValid)
+         return ApiResult.Fail("Invalid input data.", 400, ModelState);
+
+      if (await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email!) is not null)
+         return ApiResult.Fail("Email already registered.", 400);
+
+      if (await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username!) is not null)
+         return ApiResult.Fail("Username already taken.", 400);
+
+      var user = _mapper.Map<User>(dto);
+
+      user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password!);
+      user.CreatedAt = DateTime.UtcNow;
+      user.Status = UserStatus.Unverified;
+
+      _unitOfWork.UserRepository.Add(user);
+      await _unitOfWork.CompleteAsync();
+
+      return ApiResult.Success(message: "Registered successfully.", statusCode: 200);
    }
 
    [HttpPost("refresh")]

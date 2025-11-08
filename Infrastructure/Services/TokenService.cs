@@ -151,4 +151,28 @@ public class TokenService : ITokenService
          }
       }
    }
+
+   public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
+   {
+      var hashedToken = TokenHasher.HashToken(refreshToken);
+
+      var keys = await _cache.SearchKeysAsync("session:*");
+
+      foreach (var key in keys)
+      {
+         var token = await _cache.GetAsync<RefreshToken>(key);
+         if (token != null && token.TokenHash == hashedToken)
+         {
+            if (token.Revoked)
+               return false;
+
+            if (token.Expires < DateTime.UtcNow)
+               return false;
+
+            return true;
+         }
+      }
+
+      return false;
+   }
 }

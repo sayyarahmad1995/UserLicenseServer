@@ -10,4 +10,5 @@ public interface ITokenService
    Task<TokenResponseDto> RefreshTokenAsync(string refreshToken);
    Task RevokeSessionAsync(int userId, string jti);
    Task RevokeAllSessionsAsync(int userId);
+   public Task<bool> ValidateRefreshTokenAsync(string refreshToken);
 }

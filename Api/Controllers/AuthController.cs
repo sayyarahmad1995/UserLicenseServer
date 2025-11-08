@@ -29,6 +29,18 @@ public class AuthController : BaseApiController
    [HttpPost("login")]
    public async Task<IActionResult> Login([FromBody] LoginDto dto)
    {
+      if (_authHelper.TryGetCookie(Request, "refreshToken", out var existingRefreshToken))
+      {
+         var isValid = await _tokenService.ValidateRefreshTokenAsync(existingRefreshToken!);
+         if (isValid)
+         {
+            return Ok(new
+            {
+               Message = "You are already signed in",
+            });
+         }
+      }
+
       var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
       if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
          return Unauthorized(new ApiResponse(401, "Invalid credentials"));

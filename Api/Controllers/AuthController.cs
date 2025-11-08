@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Api.Errors;
+using Api.Helpers;
 using Core.DTOs;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
@@ -13,20 +14,15 @@ public class AuthController : BaseApiController
    private readonly ITokenService _tokenService;
    private readonly IConfiguration _config;
    private readonly IUnitOfWork _unitOfWork;
-   private readonly ICacheRepository _cacheRepo;
    private readonly IAuthHelper _authHelper;
+   private readonly ILogger<AuthController> _logger;
 
-   public AuthController(
-       ITokenService tokenService,
-       IConfiguration config,
-       IUnitOfWork unitOfWork,
-       ICacheRepository cacheRepo,
-       IAuthHelper authHelper)
+   public AuthController(ITokenService tokenService, ILogger<AuthController> logger, IConfiguration config, IUnitOfWork unitOfWork, IAuthHelper authHelper)
    {
+      _logger = logger;
       _tokenService = tokenService;
       _config = config;
       _unitOfWork = unitOfWork;
-      _cacheRepo = cacheRepo;
       _authHelper = authHelper;
    }
 
@@ -59,7 +55,16 @@ public class AuthController : BaseApiController
       if (!_authHelper.TryGetCookie(Request, "refreshToken", out var refreshToken))
          return Unauthorized(new ApiResponse(401, "Refresh token missing."));
 
-      var result = await _tokenService.RefreshTokenAsync(refreshToken!);
+      TokenResponseDto? result;
+      try
+      {
+         result = await _tokenService.RefreshTokenAsync(refreshToken!);
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError(ex, $"Error refreshing token.");
+         return ApiResult.Fail("Internal server error while refreshing token.", 500);
+      }
       if (result == null)
          return Unauthorized(new ApiResponse(401, "Invalid or expired refresh token."));
 

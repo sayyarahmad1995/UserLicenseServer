@@ -9,13 +9,19 @@ public class RedisCacheRepository : ICacheRepository
 {
    private readonly IDatabase _database;
    private readonly IConnectionMultiplexer _redis;
-   private readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(200);
    private readonly ILogger<RedisCacheRepository> _logger;
+   private readonly TimeSpan _defaultTimeout = TimeSpan.FromMilliseconds(200);
+
+   private static readonly JsonSerializerOptions _serializerOptions = new()
+   {
+      PropertyNameCaseInsensitive = true,
+      WriteIndented = false
+   };
 
    public RedisCacheRepository(IConnectionMultiplexer redis, ILogger<RedisCacheRepository> logger)
    {
-      _logger = logger;
       _redis = redis;
+      _logger = logger;
       _database = _redis.GetDatabase();
    }
 
@@ -23,17 +29,18 @@ public class RedisCacheRepository : ICacheRepository
    {
       try
       {
-         var json = JsonSerializer.Serialize(value);
-
+         var json = JsonSerializer.Serialize(value, _serializerOptions);
          var redisTask = _database.StringSetAsync(key, json, expiry);
          var completed = await Task.WhenAny(redisTask, Task.Delay(_defaultTimeout));
 
          if (completed != redisTask)
-            throw new TimeoutException("Redis SET timed out.");
+            throw new TimeoutException($"Redis SET timeout for key '{key}'.");
+
+         await redisTask;
       }
-      catch
+      catch (Exception ex)
       {
-         // Swallow exception silently or log if needed
+         _logger.LogWarning(ex, "Failed to SET key '{Key}' in Redis.", key);
       }
    }
 
@@ -45,13 +52,19 @@ public class RedisCacheRepository : ICacheRepository
          var completed = await Task.WhenAny(redisTask, Task.Delay(_defaultTimeout));
 
          if (completed != redisTask)
+         {
+            _logger.LogWarning("Redis GET timeout for key '{Key}'.", key);
             return default;
+         }
 
          var value = await redisTask;
-         return value.IsNullOrEmpty ? default : JsonSerializer.Deserialize<T>(value!);
+         return value.IsNullOrEmpty
+            ? default
+            : JsonSerializer.Deserialize<T>(value!, _serializerOptions);
       }
-      catch
+      catch (Exception ex)
       {
+         _logger.LogWarning(ex, "Redis GET failed for key '{Key}'.", key);
          return default;
       }
    }
@@ -63,9 +76,9 @@ public class RedisCacheRepository : ICacheRepository
          var redisTask = _database.KeyDeleteAsync(key);
          await Task.WhenAny(redisTask, Task.Delay(_defaultTimeout));
       }
-      catch
+      catch (Exception ex)
       {
-         // Ignore if Redis is unavailable
+         _logger.LogWarning(ex, "Redis REMOVE failed for key '{Key}'.", key);
       }
    }
 
@@ -75,11 +88,11 @@ public class RedisCacheRepository : ICacheRepository
       {
          var redisTask = _database.KeyExistsAsync(key);
          var completed = await Task.WhenAny(redisTask, Task.Delay(_defaultTimeout));
-
          return completed == redisTask && await redisTask;
       }
-      catch
+      catch (Exception ex)
       {
+         _logger.LogWarning(ex, "Redis EXISTS failed for key '{Key}'.", key);
          return false;
       }
    }
@@ -92,13 +105,18 @@ public class RedisCacheRepository : ICacheRepository
          var completed = await Task.WhenAny(redisTask, Task.Delay(_defaultTimeout));
 
          if (completed != redisTask)
+         {
+            _logger.LogWarning("Redis PING timeout.");
             return false;
+         }
 
          var latency = await redisTask;
+         _logger.LogDebug("Redis PING latency: {Latency}ms", latency.TotalMilliseconds);
          return latency.TotalMilliseconds < 1000;
       }
-      catch
+      catch (Exception ex)
       {
+         _logger.LogWarning(ex, "Redis PING failed.");
          return false;
       }
    }
@@ -109,10 +127,11 @@ public class RedisCacheRepository : ICacheRepository
       {
          var sub = _redis.GetSubscriber();
          await sub.PublishAsync(RedisChannel.Literal("cache-invalidation"), key);
+         _logger.LogDebug("Published cache invalidation for key '{Key}'.", key);
       }
       catch (Exception ex)
       {
-         _logger.LogError($"Redis connection error: {ex.Message}");
+         _logger.LogError(ex, "Redis publish error for key '{Key}'.", key);
       }
    }
 
@@ -123,12 +142,13 @@ public class RedisCacheRepository : ICacheRepository
          var sub = _redis.GetSubscriber();
          sub.Subscribe(RedisChannel.Literal("cache-invalidation"), async (channel, message) =>
          {
+            _logger.LogDebug("Cache invalidation received for key '{Key}'.", message);
             await onInvalidation(message!);
          });
       }
       catch (Exception ex)
       {
-         _logger.LogError($"Redis connection error: {ex.Message}");
+         _logger.LogError(ex, "Redis subscription error.");
       }
    }
 
@@ -136,30 +156,46 @@ public class RedisCacheRepository : ICacheRepository
    {
       var server = GetServer();
       if (server == null)
-         return Enumerable.Empty<string>();
-
-      // StackExchange.Redis does not have async key search, so we wrap in Task.Run
-      return await Task.Run(() =>
       {
-         return server.Keys(pattern: pattern)
-                   .Select(k => k.ToString())
-                   .ToList();
-      });
+         _logger.LogWarning("No Redis server available for key search.");
+         return Enumerable.Empty<string>();
+      }
+
+      try
+      {
+         var results = new List<string>();
+
+         await foreach (var key in server.KeysAsync(pattern: pattern))
+         {
+            results.Add(key.ToString());
+         }
+
+         return results;
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError(ex, "Redis key search failed for pattern '{Pattern}'.", pattern);
+         return Enumerable.Empty<string>();
+      }
    }
 
    private IServer? GetServer()
    {
       try
       {
-         // Get endpoints and take the first one
          var endpoints = _redis.GetEndPoints();
          if (endpoints.Length == 0)
             return null;
 
-         return _redis.GetServer(endpoints[0]);
+         var endpoint = endpoints.Length == 1
+             ? endpoints[0]
+             : endpoints[new Random().Next(endpoints.Length)];
+
+         return _redis.GetServer(endpoint);
       }
-      catch
+      catch (Exception ex)
       {
+         _logger.LogError(ex, "Failed to get Redis server instance.");
          return null;
       }
    }

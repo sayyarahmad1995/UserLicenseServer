@@ -5,7 +5,7 @@ namespace Api.Helpers;
 
 public static class ApiResult
 {
-   public static IActionResult Success(object? data = null, string? message = null, int statusCode = 200)
+   public static IActionResult Success(int statusCode = 200, string? message = null, object? data = null)
    {
       var response = new ApiResponse(statusCode, message ?? "Request completed successfully", data);
       return new ObjectResult(response)
@@ -14,7 +14,7 @@ public static class ApiResult
       };
    }
 
-   public static IActionResult Created(object? data = null, string? message = null)
+   public static IActionResult Created(string? message = null, object? data = null)
    {
       var response = new ApiResponse(201, message ?? "Resource created successfully", data);
       return new ObjectResult(response)
@@ -32,7 +32,7 @@ public static class ApiResult
       };
    }
 
-   public static IActionResult Fail(string message, int statusCode = 400, object? data = null)
+   public static IActionResult Fail(int statusCode = 400, string? message = null, object? data = null)
    {
       var response = new ApiResponse(statusCode, message, data);
       return new ObjectResult(response)

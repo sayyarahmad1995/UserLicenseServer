@@ -10,14 +10,14 @@ public class TestController : BaseApiController
    public IActionResult GetOk()
    {
       var data = new { Id = 1, Message = "Everything is working fine" };
-      return ApiResult.Success(data, "Success response example");
+      return ApiResult.Success(200, "Success response example", data);
    }
 
    [HttpPost("created")]
    public IActionResult CreateSomething()
    {
       var newItem = new { Id = 42, Name = "New Resource" };
-      return ApiResult.Created(newItem, "Resource created successfully");
+      return ApiResult.Created("Resource created successfully", newItem);
    }
 
    [HttpDelete("delete/{id}")]
@@ -29,19 +29,19 @@ public class TestController : BaseApiController
    [HttpGet("badrequest")]
    public IActionResult BadRequestExample()
    {
-      return ApiResult.Fail("This is a bad request example");
+      return ApiResult.Fail(400, "This is a bad request example");
    }
 
    [HttpGet("unauthorized")]
    public IActionResult UnauthorizedExample()
    {
-      return ApiResult.Fail("You are not authorized", 401);
+      return ApiResult.Fail(401, "You are not authorized");
    }
 
    [HttpGet("notfound")]
    public IActionResult NotFoundExample()
    {
-      return ApiResult.Fail("Resource not found", 404);
+      return ApiResult.Fail(404, "Resource not found");
    }
 
    [HttpGet("servererror")]
@@ -59,7 +59,7 @@ public class TestController : BaseApiController
    [HttpPost("validate")]
    public IActionResult ValidateExample([FromBody] TestValidationDto dto)
    {
-      return ApiResult.Success(dto, "Validation passed successfully");
+      return ApiResult.Success(200, "Validation passed successfully", dto);
    }
 }
 

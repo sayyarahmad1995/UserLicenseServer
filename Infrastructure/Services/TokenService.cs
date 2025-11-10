@@ -8,6 +8,7 @@ using Core.Interfaces;
 using Infrastructure.Services.Models;
 using Infrastructure.Services.Security;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Services;
@@ -17,9 +18,11 @@ public class TokenService : ITokenService
    private readonly IConfiguration _config;
    private readonly ICacheRepository _cache;
    private readonly IUnitOfWork _unitOfWork;
+   private readonly ILogger<TokenService> _logger;
 
-   public TokenService(IConfiguration config, ICacheRepository cache, IUnitOfWork unitOfWork)
+   public TokenService(IConfiguration config, ICacheRepository cache, IUnitOfWork unitOfWork, ILogger<TokenService> logger)
    {
+      _logger = logger;
       _config = config;
       _cache = cache;
       _unitOfWork = unitOfWork;
@@ -154,25 +157,34 @@ public class TokenService : ITokenService
 
    public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
    {
-      var hashedToken = TokenHasher.HashToken(refreshToken);
+      if (string.IsNullOrWhiteSpace(refreshToken))
+         return false;
 
+      var hashedToken = TokenHasher.HashToken(refreshToken);
       var keys = await _cache.SearchKeysAsync("session:*");
 
       foreach (var key in keys)
       {
          var token = await _cache.GetAsync<RefreshToken>(key);
-         if (token != null && token.TokenHash == hashedToken)
+         if (token == null || token.TokenHash != hashedToken)
+            continue;
+
+         if (token.Revoked)
          {
-            if (token.Revoked)
-               return false;
-
-            if (token.Expires < DateTime.UtcNow)
-               return false;
-
-            return true;
+            _logger.LogWarning("Attempted use of revoked refresh token: {Key}", key);
+            return false;
          }
+
+         if (token.Expires < DateTime.UtcNow)
+         {
+            _logger.LogInformation("Expired refresh token found: {Key}", key);
+            return false;
+         }
+
+         return true;
       }
 
+      _logger.LogInformation("No matching refresh token found in Redis.");
       return false;
    }
 }

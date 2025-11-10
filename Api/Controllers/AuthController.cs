@@ -70,13 +70,13 @@ public class AuthController : BaseApiController
    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
    {
       if (!ModelState.IsValid)
-         return ApiResult.Fail("Invalid input data.", 400, ModelState);
+         return ApiResult.Fail(400, "Invalid input data.", ModelState);
 
       if (await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email!) is not null)
-         return ApiResult.Fail("Email already registered.", 400);
+         return ApiResult.Fail(400, "Email already registered.");
 
       if (await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username!) is not null)
-         return ApiResult.Fail("Username already taken.", 400);
+         return ApiResult.Fail(400, "Username already taken.");
 
       var user = _mapper.Map<User>(dto);
 
@@ -94,28 +94,22 @@ public class AuthController : BaseApiController
    public async Task<IActionResult> RefreshToken()
    {
       if (!_authHelper.TryGetCookie(Request, "refreshToken", out var refreshToken))
-         return Unauthorized(new ApiResponse(401, "Refresh token missing."));
+         return Unauthorized(ApiResult.Fail(401, "Refresh token missing."));
 
-      TokenResponseDto? result;
+      TokenResponseDto result;
       try
       {
          result = await _tokenService.RefreshTokenAsync(refreshToken!);
       }
       catch (Exception ex)
       {
-         _logger.LogError(ex, $"Error refreshing token.");
-         return ApiResult.Fail("Internal server error while refreshing token.", 500);
+         _logger.LogError(ex, "Error refreshing token.");
+         return ApiResult.Fail(500, "Internal server error while refreshing token.");
       }
-      if (result == null)
-         return Unauthorized(new ApiResponse(401, "Invalid or expired refresh token."));
 
       await _authHelper.SetAuthCookiesAsync(Response, result.AccessToken, result.RefreshToken, _config);
 
-      return Ok(new
-      {
-         Message = "Token refreshed successfully",
-         result.AccessTokenExpires
-      });
+      return Ok(ApiResult.Success(200, "Token refreshed successfully."));
    }
 
    [HttpPost("logout")]
@@ -125,12 +119,12 @@ public class AuthController : BaseApiController
       var jti = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
 
       if (userId == null || jti == null)
-         return BadRequest(new ApiResponse(400, "Invalid session."));
+         return ApiResult.Fail(400, "Invalid session.");
 
       await _tokenService.RevokeSessionAsync(int.Parse(userId), jti);
       _authHelper.ClearAuthCookies(Response);
 
-      return Ok(new { message = "Logged out successfully." });
+      return ApiResult.Success(200, "Logged out successfully.");
    }
 
    [HttpPost("logout-all")]
@@ -143,6 +137,6 @@ public class AuthController : BaseApiController
       await _tokenService.RevokeAllSessionsAsync(int.Parse(userId));
       _authHelper.ClearAuthCookies(Response);
 
-      return Ok(new { message = "All sessions logged out successfully." });
+      return ApiResult.Success(200, "All sessions logged out successfully.");
    }
 }

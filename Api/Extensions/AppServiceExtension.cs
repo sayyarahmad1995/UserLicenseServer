@@ -120,7 +120,7 @@ public static class AppServiceExtension
 
       services.AddSwaggerGen(c =>
       {
-         c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserLicenseServer", Version = "v2" });
+         c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserLicenseServer", Version = "v1" });
       });
 
       return services;

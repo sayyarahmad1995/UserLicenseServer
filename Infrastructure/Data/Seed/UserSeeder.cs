@@ -33,6 +33,11 @@ public static class UserSeeder
       var usersJson = await File.ReadAllTextAsync(usersFile);
       var users = JsonSerializer.Deserialize<List<User>>(usersJson, jsonOpt) ?? new();
 
+      foreach (User user in users)
+      {
+         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash, BCrypt.Net.BCrypt.GenerateSalt());
+      }
+
       if (!users.Any())
       {
          logger.LogWarning("⚠️ No users found in users.json");

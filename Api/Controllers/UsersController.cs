@@ -17,7 +17,10 @@ public class UsersController : BaseApiController
    private readonly IMapper _mapper;
    private readonly ICacheRepository _cacheRepo;
    private readonly ILogger<UsersController> _logger;
-   public UsersController(IUnitOfWork unitOfWork, IMapper mapper, ICacheRepository cacheRepo, ILogger<UsersController> logger)
+   public UsersController(IUnitOfWork unitOfWork,
+   IMapper mapper,
+   ICacheRepository cacheRepo,
+   ILogger<UsersController> logger)
    {
       _logger = logger;
       _cacheRepo = cacheRepo;

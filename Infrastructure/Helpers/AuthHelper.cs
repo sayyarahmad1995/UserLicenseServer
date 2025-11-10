@@ -2,7 +2,7 @@ using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Helpers;
 
 public class AuthHelper : IAuthHelper
 {

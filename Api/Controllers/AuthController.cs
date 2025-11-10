@@ -18,10 +18,17 @@ public class AuthController : BaseApiController
    private readonly IConfiguration _config;
    private readonly IUnitOfWork _unitOfWork;
    private readonly IAuthHelper _authHelper;
+   private readonly IAuthService _authService;
    private readonly ILogger<AuthController> _logger;
    private readonly IMapper _mapper;
 
-   public AuthController(ITokenService tokenService, ILogger<AuthController> logger, IConfiguration config, IUnitOfWork unitOfWork, IAuthHelper authHelper, IMapper mapper)
+   public AuthController(ITokenService tokenService,
+   ILogger<AuthController> logger,
+   IConfiguration config,
+   IUnitOfWork unitOfWork,
+   IAuthHelper authHelper,
+   IAuthService authService,
+   IMapper mapper)
    {
       _mapper = mapper;
       _logger = logger;
@@ -29,41 +36,26 @@ public class AuthController : BaseApiController
       _config = config;
       _unitOfWork = unitOfWork;
       _authHelper = authHelper;
+      _authService = authService;
    }
 
    [HttpPost("login")]
    public async Task<IActionResult> Login([FromBody] LoginDto dto)
    {
-      if (_authHelper.TryGetCookie(Request, "refreshToken", out var existingRefreshToken))
+      try
       {
-         var isValid = await _tokenService.ValidateRefreshTokenAsync(existingRefreshToken!);
-         if (isValid)
-         {
-            return Ok(new
-            {
-               Message = "You are already signed in",
-            });
-         }
+         var result = await _authService.LoginAsync(dto, Response);
+         return ApiResult.Success(200, result.Message, new { result.AccessTokenExpires });
       }
-
-      var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
-      if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-         return Unauthorized(new ApiResponse(401, "Invalid credentials"));
-
-      var accessToken = _tokenService.GenerateAccessToken(user);
-      var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
-      var jti = jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
-
-      var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti);
-
-      await _authHelper.SetAuthCookiesAsync(Response, accessToken, refreshToken, _config);
-
-      var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
-      return Ok(new
+      catch (UnauthorizedAccessException ex)
       {
-         Message = "Login successful",
-         AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
-      });
+         return ApiResult.Fail(401, ex.Message);
+      }
+      catch (Exception ex)
+      {
+         _logger.LogError(ex, "Unexpected error during login");
+         return ApiResult.Fail(500, "Internal server error");
+      }
    }
 
    [HttpPost("register")]
@@ -109,7 +101,11 @@ public class AuthController : BaseApiController
 
       await _authHelper.SetAuthCookiesAsync(Response, result.AccessToken, result.RefreshToken, _config);
 
-      return Ok(ApiResult.Success(200, "Token refreshed successfully."));
+      var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
+      return ApiResult.Success(200, "Token refreshed successfully.", new
+      {
+         AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
+      });
    }
 
    [HttpPost("logout")]

@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -7,6 +6,7 @@ using Api.Filters;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
+using Infrastructure.Helpers;
 using Infrastructure.Interfaces;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -50,6 +50,7 @@ public static class AppServiceExtension
 
       services.AddScoped<ITokenService, TokenService>();
       services.AddScoped<IAuthHelper, AuthHelper>();
+      services.AddScoped<IAuthService, AuthService>();
 
       services.Configure<ApiBehaviorOptions>(opt =>
       {

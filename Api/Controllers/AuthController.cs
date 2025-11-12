@@ -8,7 +8,9 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Api.Controllers;
 
@@ -21,12 +23,14 @@ public class AuthController : BaseApiController
    private readonly IAuthService _authService;
    private readonly ILogger<AuthController> _logger;
    private readonly IMapper _mapper;
+   private readonly ICacheRepository _cacheRepository;
 
    public AuthController(ITokenService tokenService,
    ILogger<AuthController> logger,
    IConfiguration config,
    IUnitOfWork unitOfWork,
    IAuthHelper authHelper,
+   ICacheRepository cacheRepository,
    IAuthService authService,
    IMapper mapper)
    {
@@ -37,15 +41,17 @@ public class AuthController : BaseApiController
       _unitOfWork = unitOfWork;
       _authHelper = authHelper;
       _authService = authService;
+      _cacheRepository = cacheRepository;
    }
 
+   [AllowAnonymous]
    [HttpPost("login")]
    public async Task<IActionResult> Login([FromBody] LoginDto dto)
    {
       try
       {
          var result = await _authService.LoginAsync(dto, Response);
-         return ApiResult.Success(200, result.Message, new { result.AccessTokenExpires });
+         return ApiResult.Success(200, result.Message, result.AccessTokenExpires != null ? new { result.AccessTokenExpires } : null);
       }
       catch (UnauthorizedAccessException ex)
       {
@@ -58,17 +64,22 @@ public class AuthController : BaseApiController
       }
    }
 
+   [AllowAnonymous]
    [HttpPost("register")]
    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
    {
-      if (!ModelState.IsValid)
-         return ApiResult.Fail(400, "Invalid input data.", ModelState);
+      // if (!ModelState.IsValid)
+      //    return ApiResult.Fail(400, "Invalid input data.", ModelState);
 
+      var errors = new Dictionary<string, string[]>();
       if (await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email!) is not null)
-         return ApiResult.Fail(400, "Email already registered.");
+         errors.Add("Email", new[] { "Email already in use." });
 
       if (await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username!) is not null)
-         return ApiResult.Fail(400, "Username already taken.");
+         errors.Add("Username", new[] { "Username already taken." });
+
+      if (errors.Count > 0)
+         return ApiResult.Validation(errors);
 
       var user = _mapper.Map<User>(dto);
 
@@ -79,24 +90,29 @@ public class AuthController : BaseApiController
       _unitOfWork.UserRepository.Add(user);
       await _unitOfWork.CompleteAsync();
 
-      return ApiResult.Success(message: "Registered successfully.", statusCode: 200);
+      return ApiResult.Success(200, "Registered successfully.");
    }
 
    [HttpPost("refresh")]
    public async Task<IActionResult> RefreshToken()
    {
       if (!_authHelper.TryGetCookie(Request, "refreshToken", out var refreshToken))
-         return Unauthorized(ApiResult.Fail(401, "Refresh token missing."));
+         return ApiResult.Fail(401, "Refresh token missing.");
 
       TokenResponseDto result;
       try
       {
          result = await _tokenService.RefreshTokenAsync(refreshToken!);
       }
+      catch (SecurityTokenException ex)
+      {
+         _logger.LogWarning(ex, "Invalid or expired refresh token.");
+         return ApiResult.Fail(401, "Invalid or expired refresh token.");
+      }
       catch (Exception ex)
       {
-         _logger.LogError(ex, "Error refreshing token.");
-         return ApiResult.Fail(500, "Internal server error while refreshing token.");
+         _logger.LogError(ex, "Unexpected error refreshing token.");
+         return ApiResult.Fail(500, "Internal server error.");
       }
 
       await _authHelper.SetAuthCookiesAsync(Response, result.AccessToken, result.RefreshToken, _config);
@@ -108,6 +124,7 @@ public class AuthController : BaseApiController
       });
    }
 
+   [Authorize]
    [HttpPost("logout")]
    public async Task<IActionResult> Logout()
    {
@@ -128,10 +145,12 @@ public class AuthController : BaseApiController
    {
       var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
       if (userId == null)
-         return Unauthorized(new ApiResponse(401, "Unauthorized"));
+         return Unauthorized(new ApiResponse(401, "Invalid session."));
 
       await _tokenService.RevokeAllSessionsAsync(int.Parse(userId));
       _authHelper.ClearAuthCookies(Response);
+
+      await _cacheRepository.PublishInvalidationAsync($"session:{userId}*");
 
       return ApiResult.Success(200, "All sessions logged out successfully.");
    }

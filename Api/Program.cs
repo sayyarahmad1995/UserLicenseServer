@@ -16,11 +16,11 @@ app.UseRedisCacheInvalidation();
 
 if (app.Environment.IsDevelopment())
 {
-   app.UseSwagger();
-   app.UseSwaggerUI(c =>
-   {
-      c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserLicenseServer");
-   });
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserLicenseServer");
+    });
 }
 
 app.MapSwagger().RequireAuthorization();

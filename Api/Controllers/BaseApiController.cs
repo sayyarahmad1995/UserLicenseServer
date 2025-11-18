@@ -1,4 +1,3 @@
-using Api.Errors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;

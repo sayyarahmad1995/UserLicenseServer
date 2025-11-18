@@ -9,7 +9,7 @@
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;port=5432;Database=localdb;User Id=example;Password=example;TrustServerCertificate=True;",
-    "Redis": "localhost:6379,abortConnect=false,connectTimeout=100,asyncTimeout=100,connectRetry=0"
+    "Redis": "localhost:6379,user=admin,password=Admin@123"
   },
   "SeedData": {
     "AdminUser": {
@@ -25,6 +25,6 @@
     "Audience": "localhostClient",
     "AccessTokenExpiryMinutes": "15",
     "RefreshTokenExpiryDays": "30",
-    "Roles": ["Admin", "User", "Manager"]
+    "Roles": [ "Admin", "User", "Manager" ]
   }
 }

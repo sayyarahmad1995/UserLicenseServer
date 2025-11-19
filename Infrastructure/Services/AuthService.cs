@@ -26,17 +26,11 @@ public class AuthService : IAuthService
 
     public async Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response)
     {
-        if (_authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken))
-        {
-            var isValid = await _tokenService.ValidateRefreshTokenAsync(existingRefreshToken!);
-            if (isValid)
-            {
-                return new LoginResultDto
-                {
-                    Message = "You are already signed in"
-                };
-            }
-        }
+        _authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken);
+
+        var isValid = await _tokenService.ValidateRefreshTokenAsync(existingRefreshToken!);
+        if (isValid)
+            return new LoginResultDto { Message = "You are already signed in" };
 
         var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
@@ -50,6 +44,10 @@ public class AuthService : IAuthService
         await _authHelper.SetAuthCookiesAsync(response, accessToken, refreshToken, _config);
 
         var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
+
+        user.LastLogin = DateTime.UtcNow;
+        _unitOfWork.UserRepository.Update(user);
+        await _unitOfWork.CompleteAsync();
 
         return new LoginResultDto
         {

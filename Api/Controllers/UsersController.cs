@@ -34,8 +34,8 @@ public class UsersController : BaseApiController
         var spec = new UserSpecification(specParams);
         var countSpec = new UserCountSpecification(specParams);
 
-        var totalItems = await _unitOfWork.Repository<User>().CountAsync(countSpec);
-        var users = await _unitOfWork.Repository<User>().ListAsync(spec);
+        var totalItems = await _unitOfWork.UserRepository.CountAsync(countSpec);
+        var users = await _unitOfWork.UserRepository.ListAsync(spec);
 
         var mappedData = _mapper.Map<IReadOnlyList<UserDto>>(users);
         var data = new Pagination<UserDto>
@@ -64,7 +64,7 @@ public class UsersController : BaseApiController
             _logger.LogError($"Redis not available: {ex.Message}");
         }
 
-        var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
 
         if (user == null)
             return NotFound(new { message = "User not found" });
@@ -83,12 +83,32 @@ public class UsersController : BaseApiController
         return Ok(userDto);
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UserStatus(int id, [FromBody] StatusUpdateDto dto)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(int id)
     {
-        var user = await _unitOfWork.Repository<User>().GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
         if (user == null)
             return ApiResult.Fail(404, "User not found");
+
+        _unitOfWork.UserRepository.Delete(user);
+        await _unitOfWork.CompleteAsync();
+
+        var cacheKey = $"user:{id}";
+        await _cacheRepo.PublishInvalidationAsync(cacheKey);
+
+        return ApiResult.Success(200, "User deleted successfully");
+    }
+
+    [HttpPatch("{id:int}")]
+    public async Task<IActionResult> UpdateUserPartial(int id, [FromBody] StatusUpdateDto dto)
+    {
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+        if (user == null)
+            return NotFound(new ApiResponse(404, "User not found"));
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+            return BadRequest(new ApiResponse(400, "Status is required"));
+
         var status = dto.Status.Trim().ToLower();
 
         try
@@ -96,30 +116,22 @@ public class UsersController : BaseApiController
             switch (status)
             {
                 case "verify":
-                case "verified":
-                    user.Verify();
-                    break;
-                case "active":
-                    user.Activate();
-                    break;
+                case "verified": user.Verify(); break;
+                case "active": user.Activate(); break;
                 case "block":
-                case "blocked":
-                    user.Block();
-                    break;
-                case "unblock":
-                    user.Unblock();
-                    break;
+                case "blocked": user.Block(); break;
+                case "unblock": user.Unblock(); break;
                 default:
                     return BadRequest(new ApiResponse(400, "Invalid status value"));
             }
-            _unitOfWork.Repository<User>().Update(user);
+
+            _unitOfWork.UserRepository.Update(user);
             await _unitOfWork.CompleteAsync();
 
-            var cacheKey = $"user:{id}";
-            await _cacheRepo.PublishInvalidationAsync(cacheKey);
+            await _cacheRepo.PublishInvalidationAsync($"user:{id}");
 
-            var mapData = _mapper.Map<UserDto>(user);
-            return Ok(new ApiResponse(200, message: $"User status updated to {mapData.Status}", data: mapData));
+            var data = _mapper.Map<UserDto>(user);
+            return Ok(new ApiResponse(200, "Status updated", data));
         }
         catch (InvalidOperationException ex)
         {

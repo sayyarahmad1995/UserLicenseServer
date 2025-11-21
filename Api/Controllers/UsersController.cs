@@ -28,24 +28,51 @@ public class UsersController : BaseApiController
         _unitOfWork = unitOfWork;
     }
 
+    private string BuildUsersCacheKey(UserSpecParams p)
+    {
+        return $"users:p:{p.PageIndex}:s:{p.PageSize}:sort:{p.Sort ?? ""}:q:{p.Search ?? ""}:st:{p.Status ?? ""}";
+    }
+
     [HttpGet]
     public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams specParams)
     {
+        var cacheKey = BuildUsersCacheKey(specParams);
+
+        try
+        {
+            var cached = await _cacheRepo.GetAsync<Pagination<UserDto>>(cacheKey);
+            if (cached != null)
+                return Ok(cached);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Redis not available: {ex.Message}");
+        }
+
         var spec = new UserSpecification(specParams);
         var countSpec = new UserCountSpecification(specParams);
 
         var totalItems = await _unitOfWork.UserRepository.CountAsync(countSpec);
         var users = await _unitOfWork.UserRepository.ListAsync(spec);
 
-        var mappedData = _mapper.Map<IReadOnlyList<UserDto>>(users);
-        var data = new Pagination<UserDto>
+        var result = new Pagination<UserDto>
         {
             PageIndex = specParams.PageIndex,
             PageSize = specParams.PageSize,
             TotalCount = totalItems,
-            Data = mappedData
+            Data = _mapper.Map<IReadOnlyList<UserDto>>(users)
         };
-        return Ok(data);
+
+        try
+        {
+            await _cacheRepo.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to cache users in Redis: {ex.Message}");
+        }
+
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -149,8 +176,8 @@ public class UsersController : BaseApiController
         var spec = new LicenseSpecification(specParams);
         var countSpec = new LicenseCountWithFiltersSpecification(specParams);
 
-        var totalItems = await _unitOfWork.Repository<License>().CountAsync(countSpec);
-        var licenses = await _unitOfWork.Repository<License>().ListAsync(spec);
+        var totalItems = await _unitOfWork.LicenseRepository.CountAsync(countSpec);
+        var licenses = await _unitOfWork.LicenseRepository.ListAsync(spec);
 
         var data = _mapper.Map<IReadOnlyList<LicenseDto>>(licenses);
 
@@ -161,5 +188,18 @@ public class UsersController : BaseApiController
             TotalCount = totalItems,
             Data = data
         });
+    }
+
+    [Authorize]
+    [HttpGet("license/{key}")]
+    public async Task<ActionResult<LicenseDto>> GetLicenseByKey(string key)
+    {
+        var license = await _unitOfWork.LicenseRepository.GetByIdAsync(key);
+
+        if (license == null)
+            return NotFound(new ApiResponse(404, "License not found"));
+
+        var data = _mapper.Map<LicenseDto>(license);
+        return Ok(data);
     }
 }

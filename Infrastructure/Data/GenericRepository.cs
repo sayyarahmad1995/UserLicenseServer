@@ -36,6 +36,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
     public async Task<T?> FindByEntityAsync(Expression<Func<T, bool>> expression)
        => await _context.Set<T>().FirstOrDefaultAsync(expression);
 
+    public async Task<IReadOnlyList<T>> FindAllByEntityAsync(Expression<Func<T, bool>> expression)
+     => await _context.Set<T>().Where(expression).ToListAsync();
+
     public void Add(T entity)
        => _context.Set<T>().Add(entity);
 

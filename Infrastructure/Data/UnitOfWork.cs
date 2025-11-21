@@ -8,6 +8,7 @@ public sealed class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _context;
     private readonly Dictionary<Type, object> _repositories = new();
     private UserRepository? _userRepository;
+    private LicenseRepository? _licenseRepository;
 
     public UnitOfWork(AppDbContext context)
     {
@@ -15,6 +16,7 @@ public sealed class UnitOfWork : IUnitOfWork
     }
 
     public IUserRepository UserRepository => _userRepository ??= new UserRepository(_context);
+    public ILicenseRepository LicenseRepository => _licenseRepository ??= new LicenseRepository(_context);
 
     public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity
     {

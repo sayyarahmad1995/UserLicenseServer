@@ -236,4 +236,15 @@ public class RedisCacheRepository : ICacheRepository
     }
 
     #endregion
+
+    public Task RefreshAsync(string key, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
+    {
+        var token = GetCancellationToken(cancellationToken);
+
+        return ExecuteSafelyAsync(
+            () => _database.KeyExpireAsync(BuildKey(key), expiry).WaitAsync(token),
+            "EXPIRE",
+            key
+        );
+    }
 }

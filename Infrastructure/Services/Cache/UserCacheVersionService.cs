@@ -19,8 +19,8 @@ public class UserCacheVersionService : IUserCacheVersionService
         return v.HasValue ? (long)v : 0;
     }
 
-    public async Task<long> IncrementVersionAsync()
+    public Task<long> IncrementVersionAsync()
     {
-        return await _db.StringIncrementAsync(VersionKey);
+        return _db.StringIncrementAsync(VersionKey);
     }
 }

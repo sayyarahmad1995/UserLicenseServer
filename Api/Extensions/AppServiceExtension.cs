@@ -1,6 +1,7 @@
 using Api.Errors;
 using Api.Filters;
 using Api.Helpers;
+using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Data.Options;
@@ -46,6 +47,7 @@ public static class AppServiceExtension
         services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
         services.Configure<AdminUserSeedOptions>(config.GetSection("SeedData:AdminUser"));
+        services.Configure<CacheSettings>(config.GetSection("CacheSettings"));
 
         services.AddSingleton<HealthService>();
 
@@ -75,9 +77,8 @@ public static class AppServiceExtension
             var redisConfig = config.GetConnectionString("Redis");
             return ConnectionMultiplexer.Connect(redisConfig!);
         });
-        services.AddSingleton<IUserCacheVersionService, UserCacheVersionService>();
-        services.AddSingleton<IUserCacheService, UserCacheService>();
-        services.AddHostedService<CacheInvalidationListener>();
+        services.AddScoped<IUserCacheVersionService, UserCacheVersionService>();
+        services.AddScoped<IUserCacheService, UserCacheService>();
 
         var jwtKey = config["Jwt:Key"];
         var jwtIssuer = config["Jwt:Issuer"];

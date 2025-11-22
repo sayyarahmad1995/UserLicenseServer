@@ -10,5 +10,5 @@ public interface ICacheRepository
     Task<IEnumerable<string>> SearchKeysAsync(string pattern);
     Task PublishInvalidationAsync(string key);
     void SubscribeToInvalidations(Func<string, Task> onInvalidation);
-
+    Task RefreshAsync(string key, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
 }

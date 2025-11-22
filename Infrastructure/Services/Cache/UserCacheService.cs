@@ -1,52 +1,54 @@
-using System.Text.Json;
 using Core.DTOs;
 using Core.Helpers;
 using Core.Interfaces;
 using Core.Spec;
-using StackExchange.Redis;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Services.Cache;
 
 public class UserCacheService : IUserCacheService
 {
-    private readonly IDatabase _db;
+    private readonly ICacheRepository _cacheRepo;
     private readonly IUserCacheVersionService _versionService;
 
-    public UserCacheService(IConnectionMultiplexer redis,
+    public UserCacheService(
+        ICacheRepository cacheRepo,
+        IOptions<CacheSettings> cacheSettings,
         IUserCacheVersionService versionService)
     {
-        _db = redis.GetDatabase();
+        _cacheRepo = cacheRepo;
         _versionService = versionService;
+        _slidingExpiration = TimeSpan.FromMinutes(
+            cacheSettings.Value.UserSlidingExpirationMinutes
+        );
     }
 
-    private async Task<string> BuildKey(UserSpecParams p)
-    {
-        long version = await _versionService.GetVersionAsync();
-
-        return $"users:v{version}:{p.PageIndex}-{p.PageSize}-{p.Sort}-{p.Search}-{p.Status}";
-    }
-
+    private async Task<string> BuildListKey(UserSpecParams p)
+        => $"users:v{await _versionService.GetVersionAsync()}:{p.PageIndex}-{p.PageSize}-{p.Sort}-{p.Search}-{p.Status}";
+    private static string BuildUserKey(int id)
+        => $"user:{id}";
+    private readonly TimeSpan _slidingExpiration;
     public async Task<Pagination<UserDto>?> GetUsersAsync(UserSpecParams specParams)
-    {
-        var key = await BuildKey(specParams);
-
-        var value = await _db.StringGetAsync(key);
-        if (value.IsNullOrEmpty)
-            return null;
-
-        return JsonSerializer.Deserialize<Pagination<UserDto>>(value!);
-    }
-
+        => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams));
     public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data)
+        => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, TimeSpan.FromMinutes(5));
+    public Task InvalidateUserAsync(int id)
+        => _cacheRepo.PublishInvalidationAsync($"user:{id}");
+    public Task InvalidateUsersAsync()
+        => _versionService.IncrementVersionAsync();
+    public async Task<UserDto?> GetUserAsync(int id)
     {
-        var key = await BuildKey(specParams);
-
-        var json = JsonSerializer.Serialize(data);
-        await _db.StringSetAsync(key, json, TimeSpan.FromMinutes(5));
+        var key = BuildUserKey(id);
+        var cached = await _cacheRepo.GetAsync<UserDto>(key);
+        if (cached != null)
+        {
+            await _cacheRepo.RefreshAsync(key, _slidingExpiration);
+            return cached;
+        }
+        return null;
     }
-
-    public async Task InvalidateUsersAsync()
-    {
-        await _versionService.IncrementVersionAsync();
-    }
+    public Task CacheUserAsync(int id, UserDto user)
+        => _cacheRepo.SetAsync(BuildUserKey(id), user, _slidingExpiration);
+    public async Task InvalidateUsersCacheAsync(int id)
+        => await _cacheRepo.PublishInvalidationAsync(BuildUserKey(id));
 }

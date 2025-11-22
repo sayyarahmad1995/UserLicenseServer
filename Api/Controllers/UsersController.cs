@@ -15,83 +15,64 @@ public class UsersController : BaseApiController
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly ICacheRepository _cacheRepo;
     private readonly IUserCacheService _userCache;
     private readonly ILogger<UsersController> _logger;
-    public UsersController(IUnitOfWork unitOfWork,
-    IMapper mapper,
-    ICacheRepository cacheRepo,
-    IUserCacheService userCache,
-    ILogger<UsersController> logger)
+    public UsersController(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IUserCacheService userCache,
+        ILogger<UsersController> logger
+    )
     {
-        _logger = logger;
-        _cacheRepo = cacheRepo;
         _mapper = mapper;
         _userCache = userCache;
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     [HttpGet]
-    public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams specParams)
+    public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams p)
     {
-        var cached = await _userCache.GetUsersAsync(specParams);
+        var cached = await _userCache.GetUsersAsync(p);
         if (cached != null)
             return Ok(cached);
 
-        var spec = new UserSpecification(specParams);
-        var countSpec = new UserCountSpecification(specParams);
+        var spec = new UserSpecification(p);
+        var countSpec = new UserCountSpecification(p);
 
-        var totalItems = await _unitOfWork.UserRepository.CountAsync(countSpec);
+        var total = await _unitOfWork.UserRepository.CountAsync(countSpec);
         var users = await _unitOfWork.UserRepository.ListAsync(spec);
 
-        var mapped = _mapper.Map<IReadOnlyList<UserDto>>(users);
+        var dto = _mapper.Map<IReadOnlyList<UserDto>>(users);
 
-        var data = new Pagination<UserDto>
+        var result = new Pagination<UserDto>
         {
-            PageIndex = specParams.PageIndex,
-            PageSize = specParams.PageSize,
-            TotalCount = totalItems,
-            Data = mapped
+            PageIndex = p.PageIndex,
+            PageSize = p.PageSize,
+            TotalCount = total,
+            Data = dto
         };
 
-        await _userCache.CacheUsersAsync(specParams, data);
+        await _userCache.CacheUsersAsync(p, result);
 
-        return Ok(data);
+        return Ok(result);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<UserDto>> GetUserById(int id)
     {
-        var cacheKey = $"user:{id}";
-        UserDto? userDto;
-        try
-        {
-            userDto = await _cacheRepo.GetAsync<UserDto>(cacheKey);
-            if (userDto != null)
-                return Ok(userDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Redis not available: {ex.Message}");
-        }
+        var cached = await _userCache.GetUserAsync(id);
+        if (cached != null)
+            return Ok(cached);
 
         var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
-
         if (user == null)
-            return NotFound(new { message = "User not found" });
+            return NotFound();
 
-        userDto = _mapper.Map<UserDto>(user);
+        var dto = _mapper.Map<UserDto>(user);
+        await _userCache.CacheUserAsync(id, dto);
 
-        try
-        {
-            await _cacheRepo.SetAsync(cacheKey, userDto, TimeSpan.FromMinutes(10));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Failed to cache user in Redis: {ex.Message}");
-        }
-
-        return Ok(userDto);
+        return Ok(dto);
     }
 
     [HttpDelete("{id}")]
@@ -104,10 +85,10 @@ public class UsersController : BaseApiController
         _unitOfWork.UserRepository.Delete(user);
         await _unitOfWork.CompleteAsync();
 
-        var cacheKey = $"user:{id}";
-        await _cacheRepo.PublishInvalidationAsync(cacheKey);
+        await _userCache.InvalidateUsersAsync();
+        await _userCache.InvalidateUserAsync(id);
 
-        return ApiResult.Success(200, "User deleted successfully");
+        return NoContent();
     }
 
     [HttpPatch("{id:int}")]
@@ -140,9 +121,10 @@ public class UsersController : BaseApiController
             await _unitOfWork.CompleteAsync();
 
             await _userCache.InvalidateUsersAsync();
+            await _userCache.InvalidateUserAsync(id);
 
             var data = _mapper.Map<UserDto>(user);
-            return Ok(new ApiResponse(200, "Status updated", data));
+            return NoContent();
         }
         catch (InvalidOperationException ex)
         {

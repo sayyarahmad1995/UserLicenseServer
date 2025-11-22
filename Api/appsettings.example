@@ -27,4 +27,7 @@
     "RefreshTokenExpiryDays": "30",
     "Roles": [ "Admin", "User", "Manager" ]
   }
+  "Cache": {
+    "UserSlidingExpirationMinutes": 10
+  }
 }

@@ -7,6 +7,7 @@ using Infrastructure.Data.Options;
 using Infrastructure.Helpers;
 using Infrastructure.Interfaces;
 using Infrastructure.Services;
+using Infrastructure.Services.Cache;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -74,6 +75,10 @@ public static class AppServiceExtension
             var redisConfig = config.GetConnectionString("Redis");
             return ConnectionMultiplexer.Connect(redisConfig!);
         });
+        services.AddSingleton<IUserCacheVersionService, UserCacheVersionService>();
+        services.AddSingleton<IUserCacheService, UserCacheService>();
+        services.AddHostedService<CacheInvalidationListener>();
+
         var jwtKey = config["Jwt:Key"];
         var jwtIssuer = config["Jwt:Issuer"];
         var jwtAudience = config["Jwt:Audience"];
@@ -109,6 +114,7 @@ public static class AppServiceExtension
               }
             };
         });
+
         var roles = config.GetSection("Jwt:Roles").Get<string[]>();
         services.AddAuthorization(options =>
         {

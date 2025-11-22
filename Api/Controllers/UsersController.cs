@@ -2,8 +2,8 @@ using Api.Errors;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
-using Core.Entities;
 using Core.Interfaces;
+using Core.Helpers;
 using Core.Spec;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,38 +16,27 @@ public class UsersController : BaseApiController
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICacheRepository _cacheRepo;
+    private readonly IUserCacheService _userCache;
     private readonly ILogger<UsersController> _logger;
     public UsersController(IUnitOfWork unitOfWork,
     IMapper mapper,
     ICacheRepository cacheRepo,
+    IUserCacheService userCache,
     ILogger<UsersController> logger)
     {
         _logger = logger;
         _cacheRepo = cacheRepo;
         _mapper = mapper;
+        _userCache = userCache;
         _unitOfWork = unitOfWork;
-    }
-
-    private string BuildUsersCacheKey(UserSpecParams p)
-    {
-        return $"users:p:{p.PageIndex}:s:{p.PageSize}:sort:{p.Sort ?? ""}:q:{p.Search ?? ""}:st:{p.Status ?? ""}";
     }
 
     [HttpGet]
     public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams specParams)
     {
-        var cacheKey = BuildUsersCacheKey(specParams);
-
-        try
-        {
-            var cached = await _cacheRepo.GetAsync<Pagination<UserDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Redis not available: {ex.Message}");
-        }
+        var cached = await _userCache.GetUsersAsync(specParams);
+        if (cached != null)
+            return Ok(cached);
 
         var spec = new UserSpecification(specParams);
         var countSpec = new UserCountSpecification(specParams);
@@ -55,24 +44,19 @@ public class UsersController : BaseApiController
         var totalItems = await _unitOfWork.UserRepository.CountAsync(countSpec);
         var users = await _unitOfWork.UserRepository.ListAsync(spec);
 
-        var result = new Pagination<UserDto>
+        var mapped = _mapper.Map<IReadOnlyList<UserDto>>(users);
+
+        var data = new Pagination<UserDto>
         {
             PageIndex = specParams.PageIndex,
             PageSize = specParams.PageSize,
             TotalCount = totalItems,
-            Data = _mapper.Map<IReadOnlyList<UserDto>>(users)
+            Data = mapped
         };
 
-        try
-        {
-            await _cacheRepo.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Failed to cache users in Redis: {ex.Message}");
-        }
+        await _userCache.CacheUsersAsync(specParams, data);
 
-        return Ok(result);
+        return Ok(data);
     }
 
     [HttpGet("{id}")]
@@ -155,7 +139,7 @@ public class UsersController : BaseApiController
             _unitOfWork.UserRepository.Update(user);
             await _unitOfWork.CompleteAsync();
 
-            await _cacheRepo.PublishInvalidationAsync($"user:{id}");
+            await _userCache.InvalidateUsersAsync();
 
             var data = _mapper.Map<UserDto>(user);
             return Ok(new ApiResponse(200, "Status updated", data));

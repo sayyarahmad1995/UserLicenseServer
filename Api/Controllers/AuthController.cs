@@ -20,6 +20,7 @@ public class AuthController : BaseApiController
     private readonly IConfiguration _config;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuthHelper _authHelper;
+    private readonly IUserCacheService _userCache;
     private readonly IAuthService _authService;
     private readonly ILogger<AuthController> _logger;
     private readonly IMapper _mapper;
@@ -30,6 +31,7 @@ public class AuthController : BaseApiController
     IConfiguration config,
     IUnitOfWork unitOfWork,
     IAuthHelper authHelper,
+    IUserCacheService userCache,
     ICacheRepository cacheRepository,
     IAuthService authService,
     IMapper mapper)
@@ -40,6 +42,7 @@ public class AuthController : BaseApiController
         _config = config;
         _unitOfWork = unitOfWork;
         _authHelper = authHelper;
+        _userCache = userCache;
         _authService = authService;
         _cacheRepository = cacheRepository;
     }
@@ -68,9 +71,6 @@ public class AuthController : BaseApiController
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        // if (!ModelState.IsValid)
-        //    return ApiResult.Fail(400, "Invalid input data.", ModelState);
-
         var errors = new Dictionary<string, string[]>();
         if (await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email!) is not null)
             errors.Add("Email", new[] { "Email already in use." });
@@ -91,6 +91,33 @@ public class AuthController : BaseApiController
         await _unitOfWork.CompleteAsync();
 
         return ApiResult.Success(200, "Registered successfully.");
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return ApiResult.Fail(401, "Unauthorized.");
+
+        var cached = await _userCache.GetUserAsync(int.Parse(userId!));
+
+        UserDto? userDto;
+        if (cached != null)
+        {
+            userDto = _mapper.Map<UserDto>(cached);
+            return ApiResult.Success(200, "User retrieved successfully.", userDto);
+        }
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(int.Parse(userId));
+        if (user == null)
+            return ApiResult.Fail(404, "User not found.");
+
+        userDto = _mapper.Map<UserDto>(cached != null ? cached : user);
+
+        await _userCache.CacheUserAsync(int.Parse(userId), userDto);
+        return ApiResult.Success(200, "User retrieved successfully.", userDto);
     }
 
     [HttpPost("refresh")]
@@ -140,6 +167,7 @@ public class AuthController : BaseApiController
         return ApiResult.Success(200, "Logged out successfully.");
     }
 
+    [Authorize]
     [HttpPost("logout-all")]
     public async Task<IActionResult> LogoutAll()
     {

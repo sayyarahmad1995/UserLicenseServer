@@ -72,7 +72,7 @@ public class UsersController : BaseApiController
         var dto = _mapper.Map<UserDto>(user);
         await _userCache.CacheUserAsync(id, dto);
 
-        return Ok(dto);
+        return ApiResult.Success(200, "User retrieved successfully.", dto);
     }
 
     [HttpDelete("{id}")]
@@ -88,7 +88,7 @@ public class UsersController : BaseApiController
         await _userCache.InvalidateUsersAsync();
         await _userCache.InvalidateUserAsync(id);
 
-        return NoContent();
+        return ApiResult.NoContent();
     }
 
     [HttpPatch("{id:int}")]
@@ -124,11 +124,11 @@ public class UsersController : BaseApiController
             await _userCache.InvalidateUserAsync(id);
 
             var data = _mapper.Map<UserDto>(user);
-            return NoContent();
+            return ApiResult.Success(200, "User updated successfully.", data);
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new ApiResponse(400, ex.Message));
+            return ApiResult.Fail(400, ex.Message);
         }
     }
 
@@ -163,9 +163,9 @@ public class UsersController : BaseApiController
         var license = await _unitOfWork.LicenseRepository.GetByIdAsync(key);
 
         if (license == null)
-            return NotFound(new ApiResponse(404, "License not found"));
+            return ApiResult.Fail(404, "License not found.");
 
         var data = _mapper.Map<LicenseDto>(license);
-        return Ok(data);
+        return ApiResult.Success(200, "License retrieved successfully.", data);
     }
 }

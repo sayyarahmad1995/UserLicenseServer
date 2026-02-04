@@ -10,6 +10,8 @@ public class UserCacheService : IUserCacheService
 {
     private readonly ICacheRepository _cacheRepo;
     private readonly IUserCacheVersionService _versionService;
+    private readonly TimeSpan _slidingExpiration;
+    private readonly TimeSpan _usersListExpiration;
 
     public UserCacheService(
         ICacheRepository cacheRepo,
@@ -21,19 +23,21 @@ public class UserCacheService : IUserCacheService
         _slidingExpiration = TimeSpan.FromMinutes(
             cacheSettings.Value.UserSlidingExpirationMinutes
         );
+        _usersListExpiration = TimeSpan.FromMinutes(
+            cacheSettings.Value.UsersListExpirationMinutes
+        );
     }
 
     private async Task<string> BuildListKey(UserSpecParams p)
         => $"users:v{await _versionService.GetVersionAsync()}:{p.PageIndex}-{p.PageSize}-{p.Sort}-{p.Search}-{p.Status}";
     private static string BuildUserKey(int id)
         => $"user:{id}";
-    private readonly TimeSpan _slidingExpiration;
     public async Task<Pagination<UserDto>?> GetUsersAsync(UserSpecParams specParams)
         => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams));
     public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data)
-        => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, TimeSpan.FromMinutes(5));
+        => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, _usersListExpiration);
     public Task InvalidateUserAsync(int id)
-        => _cacheRepo.PublishInvalidationAsync($"user:{id}");
+    => _cacheRepo.PublishInvalidationAsync(BuildUserKey(id));
     public Task InvalidateUsersAsync()
         => _versionService.IncrementVersionAsync();
     public async Task<UserDto?> GetUserAsync(int id)
@@ -49,6 +53,4 @@ public class UserCacheService : IUserCacheService
     }
     public Task CacheUserAsync(int id, UserDto user)
         => _cacheRepo.SetAsync(BuildUserKey(id), user, _slidingExpiration);
-    public async Task InvalidateUsersCacheAsync(int id)
-        => await _cacheRepo.PublishInvalidationAsync(BuildUserKey(id));
 }

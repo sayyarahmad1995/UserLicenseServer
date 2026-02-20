@@ -1,0 +1,1202 @@
+[
+  {
+    "licenseKey": "LIC-691226-1",
+    "createdAt": "2024-10-30T00:00:00",
+    "expiresAt": "2025-05-09T00:00:00",
+    "revokedAt": "2024-11-14T00:00:00",
+    "status": "Revoked",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-661940-2",
+    "createdAt": "2024-03-02T00:00:00",
+    "expiresAt": "2024-08-19T00:00:00",
+    "revokedAt": "2024-03-26T00:00:00",
+    "status": "Revoked",
+    "userId": 28
+  },
+  {
+    "licenseKey": "LIC-934078-3",
+    "createdAt": "2025-07-06T00:00:00",
+    "expiresAt": "2025-10-08T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 41
+  },
+  {
+    "licenseKey": "LIC-856471-4",
+    "createdAt": "2025-01-17T00:00:00",
+    "expiresAt": "2026-01-08T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 29
+  },
+  {
+    "licenseKey": "LIC-635729-5",
+    "createdAt": "2025-04-27T00:00:00",
+    "expiresAt": "2026-02-07T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 21
+  },
+  {
+    "licenseKey": "LIC-385810-6",
+    "createdAt": "2024-03-19T00:00:00",
+    "expiresAt": "2024-03-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-930308-7",
+    "createdAt": "2025-04-25T00:00:00",
+    "expiresAt": "2026-01-26T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 11
+  },
+  {
+    "licenseKey": "LIC-467717-8",
+    "createdAt": "2024-02-13T00:00:00",
+    "expiresAt": "2024-02-10T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 50
+  },
+  {
+    "licenseKey": "LIC-565726-9",
+    "createdAt": "2025-02-24T00:00:00",
+    "expiresAt": "2025-07-26T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 26
+  },
+  {
+    "licenseKey": "LIC-907460-10",
+    "createdAt": "2024-02-03T00:00:00",
+    "expiresAt": "2024-04-01T00:00:00",
+    "revokedAt": "2024-03-10T00:00:00",
+    "status": "Revoked",
+    "userId": 4
+  },
+  {
+    "licenseKey": "LIC-853937-11",
+    "createdAt": "2024-03-28T00:00:00",
+    "expiresAt": "2024-01-09T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 5
+  },
+  {
+    "licenseKey": "LIC-233297-12",
+    "createdAt": "2024-02-03T00:00:00",
+    "expiresAt": "2024-06-18T00:00:00",
+    "revokedAt": "2024-02-18T00:00:00",
+    "status": "Revoked",
+    "userId": 6
+  },
+  {
+    "licenseKey": "LIC-360700-13",
+    "createdAt": "2024-02-28T00:00:00",
+    "expiresAt": "2024-01-01T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 49
+  },
+  {
+    "licenseKey": "LIC-558422-14",
+    "createdAt": "2024-12-10T00:00:00",
+    "expiresAt": "2024-09-30T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 8
+  },
+  {
+    "licenseKey": "LIC-877917-15",
+    "createdAt": "2025-02-24T00:00:00",
+    "expiresAt": "2025-01-29T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 28
+  },
+  {
+    "licenseKey": "LIC-234799-16",
+    "createdAt": "2025-05-30T00:00:00",
+    "expiresAt": "2025-10-11T00:00:00",
+    "revokedAt": "2025-07-11T00:00:00",
+    "status": "Revoked",
+    "userId": 49
+  },
+  {
+    "licenseKey": "LIC-879603-17",
+    "createdAt": "2024-03-11T00:00:00",
+    "expiresAt": "2023-12-12T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 22
+  },
+  {
+    "licenseKey": "LIC-858483-18",
+    "createdAt": "2025-10-13T00:00:00",
+    "expiresAt": "2025-09-22T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 25
+  },
+  {
+    "licenseKey": "LIC-633657-19",
+    "createdAt": "2025-03-15T00:00:00",
+    "expiresAt": "2025-09-15T00:00:00",
+    "revokedAt": "2025-04-27T00:00:00",
+    "status": "Revoked",
+    "userId": 34
+  },
+  {
+    "licenseKey": "LIC-953500-20",
+    "createdAt": "2025-01-25T00:00:00",
+    "expiresAt": "2024-12-22T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 36
+  },
+  {
+    "licenseKey": "LIC-287360-21",
+    "createdAt": "2025-08-18T00:00:00",
+    "expiresAt": "2026-08-13T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 48
+  },
+  {
+    "licenseKey": "LIC-558418-22",
+    "createdAt": "2024-09-08T00:00:00",
+    "expiresAt": "2024-06-24T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 18
+  },
+  {
+    "licenseKey": "LIC-939578-23",
+    "createdAt": "2025-01-12T00:00:00",
+    "expiresAt": "2025-08-03T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 3
+  },
+  {
+    "licenseKey": "LIC-150993-24",
+    "createdAt": "2024-01-19T00:00:00",
+    "expiresAt": "2023-11-24T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 22
+  },
+  {
+    "licenseKey": "LIC-118922-25",
+    "createdAt": "2024-10-13T00:00:00",
+    "expiresAt": "2024-10-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 49
+  },
+  {
+    "licenseKey": "LIC-400617-26",
+    "createdAt": "2024-10-27T00:00:00",
+    "expiresAt": "2025-02-12T00:00:00",
+    "revokedAt": "2024-12-02T00:00:00",
+    "status": "Revoked",
+    "userId": 46
+  },
+  {
+    "licenseKey": "LIC-858207-27",
+    "createdAt": "2024-07-16T00:00:00",
+    "expiresAt": "2025-03-02T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 31
+  },
+  {
+    "licenseKey": "LIC-407124-28",
+    "createdAt": "2025-07-27T00:00:00",
+    "expiresAt": "2025-05-15T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 40
+  },
+  {
+    "licenseKey": "LIC-878915-29",
+    "createdAt": "2025-04-04T00:00:00",
+    "expiresAt": "2025-02-13T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 13
+  },
+  {
+    "licenseKey": "LIC-637775-30",
+    "createdAt": "2024-03-03T00:00:00",
+    "expiresAt": "2024-12-14T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 32
+  },
+  {
+    "licenseKey": "LIC-355397-31",
+    "createdAt": "2025-05-06T00:00:00",
+    "expiresAt": "2025-05-20T00:00:00",
+    "revokedAt": "2025-05-18T00:00:00",
+    "status": "Revoked",
+    "userId": 22
+  },
+  {
+    "licenseKey": "LIC-200558-32",
+    "createdAt": "2025-01-12T00:00:00",
+    "expiresAt": "2024-10-19T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-809995-33",
+    "createdAt": "2024-06-13T00:00:00",
+    "expiresAt": "2024-07-21T00:00:00",
+    "revokedAt": "2024-06-24T00:00:00",
+    "status": "Revoked",
+    "userId": 23
+  },
+  {
+    "licenseKey": "LIC-724666-34",
+    "createdAt": "2025-01-11T00:00:00",
+    "expiresAt": "2025-06-27T00:00:00",
+    "revokedAt": "2025-02-04T00:00:00",
+    "status": "Revoked",
+    "userId": 9
+  },
+  {
+    "licenseKey": "LIC-584564-35",
+    "createdAt": "2024-02-03T00:00:00",
+    "expiresAt": "2024-05-10T00:00:00",
+    "revokedAt": "2024-03-14T00:00:00",
+    "status": "Revoked",
+    "userId": 37
+  },
+  {
+    "licenseKey": "LIC-878866-36",
+    "createdAt": "2025-09-09T00:00:00",
+    "expiresAt": "2025-09-01T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 35
+  },
+  {
+    "licenseKey": "LIC-460003-37",
+    "createdAt": "2024-08-05T00:00:00",
+    "expiresAt": "2025-04-21T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 41
+  },
+  {
+    "licenseKey": "LIC-920584-38",
+    "createdAt": "2025-03-03T00:00:00",
+    "expiresAt": "2025-08-08T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-187438-39",
+    "createdAt": "2025-04-04T00:00:00",
+    "expiresAt": "2025-08-08T00:00:00",
+    "revokedAt": "2025-04-27T00:00:00",
+    "status": "Revoked",
+    "userId": 32
+  },
+  {
+    "licenseKey": "LIC-585126-40",
+    "createdAt": "2024-08-04T00:00:00",
+    "expiresAt": "2024-09-18T00:00:00",
+    "revokedAt": "2024-08-22T00:00:00",
+    "status": "Revoked",
+    "userId": 2
+  },
+  {
+    "licenseKey": "LIC-460409-41",
+    "createdAt": "2024-02-29T00:00:00",
+    "expiresAt": "2024-05-22T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 49
+  },
+  {
+    "licenseKey": "LIC-502627-42",
+    "createdAt": "2025-08-21T00:00:00",
+    "expiresAt": "2026-02-01T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 1
+  },
+  {
+    "licenseKey": "LIC-277497-43",
+    "createdAt": "2024-12-03T00:00:00",
+    "expiresAt": "2025-05-15T00:00:00",
+    "revokedAt": "2024-12-12T00:00:00",
+    "status": "Revoked",
+    "userId": 46
+  },
+  {
+    "licenseKey": "LIC-197403-44",
+    "createdAt": "2025-05-30T00:00:00",
+    "expiresAt": "2025-08-14T00:00:00",
+    "revokedAt": "2025-06-05T00:00:00",
+    "status": "Revoked",
+    "userId": 2
+  },
+  {
+    "licenseKey": "LIC-723578-45",
+    "createdAt": "2024-01-08T00:00:00",
+    "expiresAt": "2024-07-06T00:00:00",
+    "revokedAt": "2024-01-26T00:00:00",
+    "status": "Revoked",
+    "userId": 31
+  },
+  {
+    "licenseKey": "LIC-915113-46",
+    "createdAt": "2025-02-25T00:00:00",
+    "expiresAt": "2025-07-11T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 2
+  },
+  {
+    "licenseKey": "LIC-964969-47",
+    "createdAt": "2024-08-17T00:00:00",
+    "expiresAt": "2024-09-02T00:00:00",
+    "revokedAt": "2024-08-29T00:00:00",
+    "status": "Revoked",
+    "userId": 11
+  },
+  {
+    "licenseKey": "LIC-464573-48",
+    "createdAt": "2024-04-14T00:00:00",
+    "expiresAt": "2024-11-26T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 38
+  },
+  {
+    "licenseKey": "LIC-708203-49",
+    "createdAt": "2025-10-15T00:00:00",
+    "expiresAt": "2025-12-07T00:00:00",
+    "revokedAt": "2025-11-25T00:00:00",
+    "status": "Revoked",
+    "userId": 11
+  },
+  {
+    "licenseKey": "LIC-853037-50",
+    "createdAt": "2024-02-14T00:00:00",
+    "expiresAt": "2024-07-20T00:00:00",
+    "revokedAt": "2024-04-04T00:00:00",
+    "status": "Revoked",
+    "userId": 44
+  },
+  {
+    "licenseKey": "LIC-902858-51",
+    "createdAt": "2024-01-17T00:00:00",
+    "expiresAt": "2024-04-21T00:00:00",
+    "revokedAt": "2024-02-05T00:00:00",
+    "status": "Revoked",
+    "userId": 45
+  },
+  {
+    "licenseKey": "LIC-101474-52",
+    "createdAt": "2025-07-17T00:00:00",
+    "expiresAt": "2026-02-15T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 49
+  },
+  {
+    "licenseKey": "LIC-686610-53",
+    "createdAt": "2024-08-25T00:00:00",
+    "expiresAt": "2024-06-07T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 42
+  },
+  {
+    "licenseKey": "LIC-209302-54",
+    "createdAt": "2024-09-05T00:00:00",
+    "expiresAt": "2025-02-19T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-328160-55",
+    "createdAt": "2025-07-12T00:00:00",
+    "expiresAt": "2026-04-15T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 25
+  },
+  {
+    "licenseKey": "LIC-151195-56",
+    "createdAt": "2024-10-24T00:00:00",
+    "expiresAt": "2024-07-28T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 32
+  },
+  {
+    "licenseKey": "LIC-671718-57",
+    "createdAt": "2024-03-15T00:00:00",
+    "expiresAt": "2024-06-19T00:00:00",
+    "revokedAt": "2024-04-26T00:00:00",
+    "status": "Revoked",
+    "userId": 26
+  },
+  {
+    "licenseKey": "LIC-685216-58",
+    "createdAt": "2025-08-16T00:00:00",
+    "expiresAt": "2025-06-02T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 2
+  },
+  {
+    "licenseKey": "LIC-602499-59",
+    "createdAt": "2025-07-21T00:00:00",
+    "expiresAt": "2025-12-24T00:00:00",
+    "revokedAt": "2025-08-21T00:00:00",
+    "status": "Revoked",
+    "userId": 29
+  },
+  {
+    "licenseKey": "LIC-478195-60",
+    "createdAt": "2024-08-23T00:00:00",
+    "expiresAt": "2024-09-12T00:00:00",
+    "revokedAt": "2024-09-23T00:00:00",
+    "status": "Revoked",
+    "userId": 5
+  },
+  {
+    "licenseKey": "LIC-129362-61",
+    "createdAt": "2025-03-04T00:00:00",
+    "expiresAt": "2025-08-30T00:00:00",
+    "revokedAt": "2025-03-12T00:00:00",
+    "status": "Revoked",
+    "userId": 38
+  },
+  {
+    "licenseKey": "LIC-852202-62",
+    "createdAt": "2024-12-22T00:00:00",
+    "expiresAt": "2025-04-10T00:00:00",
+    "revokedAt": "2025-01-31T00:00:00",
+    "status": "Revoked",
+    "userId": 43
+  },
+  {
+    "licenseKey": "LIC-484970-63",
+    "createdAt": "2024-05-17T00:00:00",
+    "expiresAt": "2024-06-27T00:00:00",
+    "revokedAt": "2024-06-03T00:00:00",
+    "status": "Revoked",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-183876-64",
+    "createdAt": "2025-08-08T00:00:00",
+    "expiresAt": "2026-01-09T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 13
+  },
+  {
+    "licenseKey": "LIC-867521-65",
+    "createdAt": "2024-07-10T00:00:00",
+    "expiresAt": "2024-10-19T00:00:00",
+    "revokedAt": "2024-07-23T00:00:00",
+    "status": "Revoked",
+    "userId": 36
+  },
+  {
+    "licenseKey": "LIC-640993-66",
+    "createdAt": "2024-02-20T00:00:00",
+    "expiresAt": "2025-01-19T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 4
+  },
+  {
+    "licenseKey": "LIC-406393-67",
+    "createdAt": "2024-10-15T00:00:00",
+    "expiresAt": "2024-11-20T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 3
+  },
+  {
+    "licenseKey": "LIC-838913-68",
+    "createdAt": "2024-03-17T00:00:00",
+    "expiresAt": "2024-03-31T00:00:00",
+    "revokedAt": "2024-04-17T00:00:00",
+    "status": "Revoked",
+    "userId": 13
+  },
+  {
+    "licenseKey": "LIC-973746-69",
+    "createdAt": "2025-08-15T00:00:00",
+    "expiresAt": "2026-01-30T00:00:00",
+    "revokedAt": "2025-10-02T00:00:00",
+    "status": "Revoked",
+    "userId": 16
+  },
+  {
+    "licenseKey": "LIC-728319-70",
+    "createdAt": "2024-04-06T00:00:00",
+    "expiresAt": "2024-08-27T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-266988-71",
+    "createdAt": "2024-10-02T00:00:00",
+    "expiresAt": "2025-01-28T00:00:00",
+    "revokedAt": "2024-11-07T00:00:00",
+    "status": "Revoked",
+    "userId": 1
+  },
+  {
+    "licenseKey": "LIC-158857-72",
+    "createdAt": "2025-09-05T00:00:00",
+    "expiresAt": "2025-06-03T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 44
+  },
+  {
+    "licenseKey": "LIC-780913-73",
+    "createdAt": "2025-10-25T00:00:00",
+    "expiresAt": "2026-04-25T00:00:00",
+    "revokedAt": "2025-12-11T00:00:00",
+    "status": "Revoked",
+    "userId": 4
+  },
+  {
+    "licenseKey": "LIC-467424-74",
+    "createdAt": "2024-01-08T00:00:00",
+    "expiresAt": "2024-03-21T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 6
+  },
+  {
+    "licenseKey": "LIC-626841-75",
+    "createdAt": "2024-05-23T00:00:00",
+    "expiresAt": "2024-10-20T00:00:00",
+    "revokedAt": "2024-07-08T00:00:00",
+    "status": "Revoked",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-408730-76",
+    "createdAt": "2024-07-06T00:00:00",
+    "expiresAt": "2024-12-07T00:00:00",
+    "revokedAt": "2024-08-25T00:00:00",
+    "status": "Revoked",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-641657-77",
+    "createdAt": "2024-02-03T00:00:00",
+    "expiresAt": "2024-03-04T00:00:00",
+    "revokedAt": "2024-02-12T00:00:00",
+    "status": "Revoked",
+    "userId": 27
+  },
+  {
+    "licenseKey": "LIC-239112-78",
+    "createdAt": "2025-06-16T00:00:00",
+    "expiresAt": "2025-07-18T00:00:00",
+    "revokedAt": "2025-06-26T00:00:00",
+    "status": "Revoked",
+    "userId": 12
+  },
+  {
+    "licenseKey": "LIC-378010-79",
+    "createdAt": "2025-03-12T00:00:00",
+    "expiresAt": "2025-06-16T00:00:00",
+    "revokedAt": "2025-04-18T00:00:00",
+    "status": "Revoked",
+    "userId": 40
+  },
+  {
+    "licenseKey": "LIC-847123-80",
+    "createdAt": "2024-05-30T00:00:00",
+    "expiresAt": "2024-05-13T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 48
+  },
+  {
+    "licenseKey": "LIC-923665-81",
+    "createdAt": "2024-01-08T00:00:00",
+    "expiresAt": "2024-05-07T00:00:00",
+    "revokedAt": "2024-01-20T00:00:00",
+    "status": "Revoked",
+    "userId": 18
+  },
+  {
+    "licenseKey": "LIC-132771-82",
+    "createdAt": "2025-08-03T00:00:00",
+    "expiresAt": "2025-10-08T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 46
+  },
+  {
+    "licenseKey": "LIC-403945-83",
+    "createdAt": "2024-05-24T00:00:00",
+    "expiresAt": "2025-04-20T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 22
+  },
+  {
+    "licenseKey": "LIC-105014-84",
+    "createdAt": "2025-06-01T00:00:00",
+    "expiresAt": "2025-12-11T00:00:00",
+    "revokedAt": "2025-07-02T00:00:00",
+    "status": "Revoked",
+    "userId": 47
+  },
+  {
+    "licenseKey": "LIC-391059-85",
+    "createdAt": "2025-02-26T00:00:00",
+    "expiresAt": "2025-02-21T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 35
+  },
+  {
+    "licenseKey": "LIC-458360-86",
+    "createdAt": "2025-08-03T00:00:00",
+    "expiresAt": "2025-12-23T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 42
+  },
+  {
+    "licenseKey": "LIC-367297-87",
+    "createdAt": "2024-08-10T00:00:00",
+    "expiresAt": "2024-06-01T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 46
+  },
+  {
+    "licenseKey": "LIC-832167-88",
+    "createdAt": "2024-09-28T00:00:00",
+    "expiresAt": "2024-12-24T00:00:00",
+    "revokedAt": "2024-10-20T00:00:00",
+    "status": "Revoked",
+    "userId": 5
+  },
+  {
+    "licenseKey": "LIC-522406-89",
+    "createdAt": "2025-01-03T00:00:00",
+    "expiresAt": "2025-04-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-485946-90",
+    "createdAt": "2024-05-11T00:00:00",
+    "expiresAt": "2024-10-07T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 50
+  },
+  {
+    "licenseKey": "LIC-817209-91",
+    "createdAt": "2024-02-29T00:00:00",
+    "expiresAt": "2024-01-17T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-292851-92",
+    "createdAt": "2024-01-10T00:00:00",
+    "expiresAt": "2024-02-22T00:00:00",
+    "revokedAt": "2024-01-24T00:00:00",
+    "status": "Revoked",
+    "userId": 50
+  },
+  {
+    "licenseKey": "LIC-755886-93",
+    "createdAt": "2025-07-09T00:00:00",
+    "expiresAt": "2025-04-28T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 43
+  },
+  {
+    "licenseKey": "LIC-723541-94",
+    "createdAt": "2024-04-08T00:00:00",
+    "expiresAt": "2024-02-12T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 43
+  },
+  {
+    "licenseKey": "LIC-959519-95",
+    "createdAt": "2025-03-21T00:00:00",
+    "expiresAt": "2025-07-03T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 31
+  },
+  {
+    "licenseKey": "LIC-260560-96",
+    "createdAt": "2025-06-02T00:00:00",
+    "expiresAt": "2025-08-16T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 8
+  },
+  {
+    "licenseKey": "LIC-576718-97",
+    "createdAt": "2024-06-26T00:00:00",
+    "expiresAt": "2024-10-15T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 9
+  },
+  {
+    "licenseKey": "LIC-807658-98",
+    "createdAt": "2024-12-05T00:00:00",
+    "expiresAt": "2024-09-22T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 18
+  },
+  {
+    "licenseKey": "LIC-569146-99",
+    "createdAt": "2025-07-23T00:00:00",
+    "expiresAt": "2025-12-31T00:00:00",
+    "revokedAt": "2025-09-06T00:00:00",
+    "status": "Revoked",
+    "userId": 16
+  },
+  {
+    "licenseKey": "LIC-547251-100",
+    "createdAt": "2025-08-23T00:00:00",
+    "expiresAt": "2026-05-21T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 39
+  },
+  {
+    "licenseKey": "LIC-493499-101",
+    "createdAt": "2025-08-05T00:00:00",
+    "expiresAt": "2025-09-12T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 47
+  },
+  {
+    "licenseKey": "LIC-965953-102",
+    "createdAt": "2025-09-02T00:00:00",
+    "expiresAt": "2026-01-08T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 48
+  },
+  {
+    "licenseKey": "LIC-696910-103",
+    "createdAt": "2024-04-05T00:00:00",
+    "expiresAt": "2024-04-01T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 14
+  },
+  {
+    "licenseKey": "LIC-615290-104",
+    "createdAt": "2025-05-06T00:00:00",
+    "expiresAt": "2025-03-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 48
+  },
+  {
+    "licenseKey": "LIC-494945-105",
+    "createdAt": "2024-11-16T00:00:00",
+    "expiresAt": "2024-12-28T00:00:00",
+    "revokedAt": "2024-12-26T00:00:00",
+    "status": "Revoked",
+    "userId": 10
+  },
+  {
+    "licenseKey": "LIC-984628-106",
+    "createdAt": "2024-03-17T00:00:00",
+    "expiresAt": "2024-09-03T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 38
+  },
+  {
+    "licenseKey": "LIC-506960-107",
+    "createdAt": "2024-06-03T00:00:00",
+    "expiresAt": "2024-10-25T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 35
+  },
+  {
+    "licenseKey": "LIC-568872-108",
+    "createdAt": "2025-08-08T00:00:00",
+    "expiresAt": "2025-10-11T00:00:00",
+    "revokedAt": "2025-09-03T00:00:00",
+    "status": "Revoked",
+    "userId": 41
+  },
+  {
+    "licenseKey": "LIC-694133-109",
+    "createdAt": "2024-10-09T00:00:00",
+    "expiresAt": "2025-01-25T00:00:00",
+    "revokedAt": "2024-11-21T00:00:00",
+    "status": "Revoked",
+    "userId": 45
+  },
+  {
+    "licenseKey": "LIC-344522-110",
+    "createdAt": "2024-03-27T00:00:00",
+    "expiresAt": "2024-11-09T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 15
+  },
+  {
+    "licenseKey": "LIC-936663-111",
+    "createdAt": "2024-10-21T00:00:00",
+    "expiresAt": "2024-10-02T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 5
+  },
+  {
+    "licenseKey": "LIC-724173-112",
+    "createdAt": "2024-10-17T00:00:00",
+    "expiresAt": "2025-08-24T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 3
+  },
+  {
+    "licenseKey": "LIC-723571-113",
+    "createdAt": "2024-06-02T00:00:00",
+    "expiresAt": "2024-08-22T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 30
+  },
+  {
+    "licenseKey": "LIC-560820-114",
+    "createdAt": "2025-02-24T00:00:00",
+    "expiresAt": "2025-10-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 32
+  },
+  {
+    "licenseKey": "LIC-707070-115",
+    "createdAt": "2024-12-14T00:00:00",
+    "expiresAt": "2025-06-12T00:00:00",
+    "revokedAt": "2024-12-22T00:00:00",
+    "status": "Revoked",
+    "userId": 30
+  },
+  {
+    "licenseKey": "LIC-721844-116",
+    "createdAt": "2024-12-18T00:00:00",
+    "expiresAt": "2025-07-23T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 38
+  },
+  {
+    "licenseKey": "LIC-656512-117",
+    "createdAt": "2025-04-30T00:00:00",
+    "expiresAt": "2025-04-29T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 19
+  },
+  {
+    "licenseKey": "LIC-727936-118",
+    "createdAt": "2025-09-23T00:00:00",
+    "expiresAt": "2025-09-11T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 8
+  },
+  {
+    "licenseKey": "LIC-878030-119",
+    "createdAt": "2024-07-24T00:00:00",
+    "expiresAt": "2024-05-18T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 31
+  },
+  {
+    "licenseKey": "LIC-619746-120",
+    "createdAt": "2025-05-02T00:00:00",
+    "expiresAt": "2025-03-29T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 45
+  },
+  {
+    "licenseKey": "LIC-388698-121",
+    "createdAt": "2025-03-06T00:00:00",
+    "expiresAt": "2025-01-20T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 45
+  },
+  {
+    "licenseKey": "LIC-858880-122",
+    "createdAt": "2025-03-25T00:00:00",
+    "expiresAt": "2025-01-25T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 24
+  },
+  {
+    "licenseKey": "LIC-169124-123",
+    "createdAt": "2024-02-25T00:00:00",
+    "expiresAt": "2024-07-08T00:00:00",
+    "revokedAt": "2024-03-12T00:00:00",
+    "status": "Revoked",
+    "userId": 11
+  },
+  {
+    "licenseKey": "LIC-833340-124",
+    "createdAt": "2024-07-02T00:00:00",
+    "expiresAt": "2025-05-25T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 1
+  },
+  {
+    "licenseKey": "LIC-826946-125",
+    "createdAt": "2025-10-06T00:00:00",
+    "expiresAt": "2026-03-10T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 35
+  },
+  {
+    "licenseKey": "LIC-450709-126",
+    "createdAt": "2024-04-23T00:00:00",
+    "expiresAt": "2025-02-09T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 25
+  },
+  {
+    "licenseKey": "LIC-623677-127",
+    "createdAt": "2024-02-02T00:00:00",
+    "expiresAt": "2024-08-20T00:00:00",
+    "revokedAt": null,
+    "status": "Active",
+    "userId": 12
+  },
+  {
+    "licenseKey": "LIC-512273-128",
+    "createdAt": "2024-11-04T00:00:00",
+    "expiresAt": "2025-09-18T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 3
+  },
+  {
+    "licenseKey": "LIC-773208-129",
+    "createdAt": "2024-08-25T00:00:00",
+    "expiresAt": "2025-03-11T00:00:00",
+    "revokedAt": "2024-10-14T00:00:00",
+    "status": "Revoked",
+    "userId": 44
+  },
+  {
+    "licenseKey": "LIC-692454-130",
+    "createdAt": "2024-02-20T00:00:00",
+    "expiresAt": "2024-05-27T00:00:00",
+    "revokedAt": "2024-04-09T00:00:00",
+    "status": "Revoked",
+    "userId": 20
+  },
+  {
+    "licenseKey": "LIC-227335-131",
+    "createdAt": "2024-07-31T00:00:00",
+    "expiresAt": "2024-08-21T00:00:00",
+    "revokedAt": "2024-08-27T00:00:00",
+    "status": "Revoked",
+    "userId": 50
+  },
+  {
+    "licenseKey": "LIC-368011-132",
+    "createdAt": "2024-05-09T00:00:00",
+    "expiresAt": "2024-05-21T00:00:00",
+    "revokedAt": "2024-06-01T00:00:00",
+    "status": "Revoked",
+    "userId": 2
+  },
+  {
+    "licenseKey": "LIC-167086-133",
+    "createdAt": "2025-06-09T00:00:00",
+    "expiresAt": "2026-05-22T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 50
+  },
+  {
+    "licenseKey": "LIC-545511-134",
+    "createdAt": "2024-03-30T00:00:00",
+    "expiresAt": "2024-02-23T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 6
+  },
+  {
+    "licenseKey": "LIC-665083-135",
+    "createdAt": "2024-10-17T00:00:00",
+    "expiresAt": "2025-04-08T00:00:00",
+    "revokedAt": "2024-11-21T00:00:00",
+    "status": "Revoked",
+    "userId": 33
+  },
+  {
+    "licenseKey": "LIC-504955-136",
+    "createdAt": "2025-02-23T00:00:00",
+    "expiresAt": "2024-12-15T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 17
+  },
+  {
+    "licenseKey": "LIC-354571-137",
+    "createdAt": "2025-05-01T00:00:00",
+    "expiresAt": "2025-02-28T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 44
+  },
+  {
+    "licenseKey": "LIC-598996-138",
+    "createdAt": "2025-09-29T00:00:00",
+    "expiresAt": "2025-12-12T00:00:00",
+    "revokedAt": "2025-10-31T00:00:00",
+    "status": "Revoked",
+    "userId": 6
+  },
+  {
+    "licenseKey": "LIC-757539-139",
+    "createdAt": "2025-10-20T00:00:00",
+    "expiresAt": "2025-09-17T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 9
+  },
+  {
+    "licenseKey": "LIC-252932-140",
+    "createdAt": "2025-04-17T00:00:00",
+    "expiresAt": "2025-05-16T00:00:00",
+    "revokedAt": "2025-05-06T00:00:00",
+    "status": "Revoked",
+    "userId": 45
+  },
+  {
+    "licenseKey": "LIC-345322-141",
+    "createdAt": "2024-12-22T00:00:00",
+    "expiresAt": "2025-05-19T00:00:00",
+    "revokedAt": "2025-01-22T00:00:00",
+    "status": "Revoked",
+    "userId": 4
+  },
+  {
+    "licenseKey": "LIC-404060-142",
+    "createdAt": "2025-06-10T00:00:00",
+    "expiresAt": "2025-08-04T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 3
+  },
+  {
+    "licenseKey": "LIC-517699-143",
+    "createdAt": "2025-05-07T00:00:00",
+    "expiresAt": "2025-04-25T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 47
+  },
+  {
+    "licenseKey": "LIC-410641-144",
+    "createdAt": "2024-03-09T00:00:00",
+    "expiresAt": "2024-03-06T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 25
+  },
+  {
+    "licenseKey": "LIC-965910-145",
+    "createdAt": "2024-02-05T00:00:00",
+    "expiresAt": "2023-12-18T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 35
+  },
+  {
+    "licenseKey": "LIC-507926-146",
+    "createdAt": "2024-08-19T00:00:00",
+    "expiresAt": "2024-07-16T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 47
+  },
+  {
+    "licenseKey": "LIC-341277-147",
+    "createdAt": "2025-03-30T00:00:00",
+    "expiresAt": "2025-08-25T00:00:00",
+    "revokedAt": "2025-04-08T00:00:00",
+    "status": "Revoked",
+    "userId": 42
+  },
+  {
+    "licenseKey": "LIC-775716-148",
+    "createdAt": "2024-03-19T00:00:00",
+    "expiresAt": "2024-02-27T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 15
+  },
+  {
+    "licenseKey": "LIC-731889-149",
+    "createdAt": "2024-08-08T00:00:00",
+    "expiresAt": "2025-05-03T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 47
+  },
+  {
+    "licenseKey": "LIC-917982-150",
+    "createdAt": "2024-12-09T00:00:00",
+    "expiresAt": "2024-11-01T00:00:00",
+    "revokedAt": null,
+    "status": "Expired",
+    "userId": 19
+  }
+]

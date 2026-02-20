@@ -1,0 +1,54 @@
+{
+  "$schema": "https://www.schemastore.org/appsettings.json",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;port=5432;Database=localdb;User Id=example;Password=example;TrustServerCertificate=True;",
+    "Redis": "localhost:6379,user=admin,password=Admin@123"
+  },
+  "SeedData": {
+    "AdminUser": {
+      "Username": "admin",
+      "Email": "mail@example.com",
+      "Password": "Admin@123",
+      "Role": "Admin"
+    }
+  },
+  "Jwt": {
+    "Key": "supersecretkey1234567890",
+    "Issuer": "localhost",
+    "Audience": "localhostClient",
+    "AccessTokenExpiryMinutes": "15",
+    "RefreshTokenExpiryDays": "30",
+    "Roles": [ "Admin", "User", "Manager" ]
+  },
+  "CacheSettings": {
+    "UserExpirationMinutes": 10,
+    "UsersListExpirationMinutes": 5
+  },
+  "ThrottlingSettings": {
+    "Global": {
+      "ThrottleThreshold": 30,
+      "MaxRequestsPerMinute": 60,
+      "WindowSeconds": 60,
+      "MaxDelayMs": 5000
+    },
+    "Auth": {
+      "ThrottleThreshold": 3,
+      "MaxRequestsPerMinute": 5,
+      "WindowSeconds": 60,
+      "MaxDelayMs": 10000
+    },
+    "User": {
+      "ThrottleThreshold": 60,
+      "MaxRequestsPerMinute": 120,
+      "WindowSeconds": 60,
+      "MaxDelayMs": 3000
+    }
+  }
+}

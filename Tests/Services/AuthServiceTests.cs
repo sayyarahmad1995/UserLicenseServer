@@ -181,10 +181,19 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_WithExistingValidSession_ShouldReturnAlreadySignInMessage()
+    public async Task LoginAsync_WithExistingValidSession_ShouldStillLoginSuccessfully()
     {
-        // Arrange
+        // Arrange - even with an existing session, login should proceed
         var loginDto = new LoginDto { Username = "testuser", Password = "TestPassword@123" };
+        var user = new User
+        {
+            Id = 1,
+            Username = "testuser",
+            Email = "test@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword@123"),
+            Role = "User",
+            Status = UserStatus.Active
+        };
 
         var httpContextMock = new Mock<HttpContext>();
         var requestMock = new Mock<HttpRequest>();
@@ -192,22 +201,37 @@ public class AuthServiceTests
         responseMock.Setup(r => r.HttpContext).Returns(httpContextMock.Object);
         httpContextMock.Setup(c => c.Request).Returns(requestMock.Object);
 
-        var existingToken = "existing_token";
-        _authHelperMock
-            .Setup(x => x.TryGetCookie(It.IsAny<HttpRequest>(), "refreshToken", out existingToken))
-            .Returns(true);
+        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser"))
+            .ReturnsAsync(user);
 
-        _tokenServiceMock
-            .Setup(x => x.ValidateRefreshTokenAsync(existingToken))
-            .ReturnsAsync(true);
+        var validToken = new JwtSecurityToken(
+            issuer: "test",
+            audience: "test",
+            expires: DateTime.UtcNow.AddMinutes(15),
+            claims: new[] { new System.Security.Claims.Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) }
+        );
+        var validTokenString = new JwtSecurityTokenHandler().WriteToken(validToken);
+
+        _tokenServiceMock.Setup(x => x.GenerateAccessToken(user))
+            .Returns(validTokenString);
+
+        _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>()))
+            .ReturnsAsync("refresh_token");
+
+        _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
+            .Returns("15");
+
+        _authHelperMock.Setup(x => x.SetAuthCookiesAsync(responseMock.Object, validTokenString, "refresh_token", _configMock.Object))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _authService.LoginAsync(loginDto, responseMock.Object);
 
         // Assert
         result.Should().NotBeNull();
-        result.Message.Should().Be("You are already signed in");
-        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync(It.IsAny<string>()), Times.Never);
+        result.Message.Should().Be("Login successful");
+        result.AccessTokenExpires.Should().NotBeNull();
+        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("testuser"), Times.Once);
     }
 
     #endregion

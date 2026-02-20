@@ -16,17 +16,32 @@ namespace Infrastructure.Services;
 
 public class TokenService : ITokenService
 {
-    private readonly IConfiguration _config;
     private readonly ICacheRepository _cache;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<TokenService> _logger;
 
+    // Cached config values - avoid repeated config lookups
+    private readonly SymmetricSecurityKey _signingKey;
+    private readonly SigningCredentials _signingCredentials;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
+    private readonly int _accessTokenExpiryMinutes;
+    private readonly int _refreshTokenExpiryDays;
+    private readonly JwtSecurityTokenHandler _tokenHandler = new();
+
     public TokenService(IConfiguration config, ICacheRepository cache, IUnitOfWork unitOfWork, ILogger<TokenService> logger)
     {
         _logger = logger;
-        _config = config;
         _cache = cache;
         _unitOfWork = unitOfWork;
+
+        // Cache these values once in constructor instead of reading config on every call
+        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
+        _signingCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha512);
+        _jwtIssuer = config["Jwt:Issuer"]!;
+        _jwtAudience = config["Jwt:Audience"]!;
+        _accessTokenExpiryMinutes = int.Parse(config["Jwt:AccessTokenExpiryMinutes"]!);
+        _refreshTokenExpiryDays = int.Parse(config["Jwt:RefreshTokenExpiryDays"]!);
     }
 
     public string GenerateAccessToken(User user)
@@ -41,19 +56,16 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: _jwtIssuer,
+            audience: _jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!)),
-            signingCredentials: creds
+            expires: DateTime.UtcNow.AddMinutes(_accessTokenExpiryMinutes),
+            signingCredentials: _signingCredentials
         );
 
         _logger.LogDebug("Access token generated successfully for user {UserId}", user.Id);
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return _tokenHandler.WriteToken(token);
     }
 
     public async Task<string> GenerateRefreshTokenAsync(User user, string jti)
@@ -68,7 +80,7 @@ public class TokenService : ITokenService
             UserId = user.Id.ToString(),
             TokenHash = hashedToken,
             CreatedAt = DateTime.UtcNow,
-            Expires = DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:RefreshTokenExpiryDays"]!)),
+            Expires = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
             Jti = jti
         };
 
@@ -198,5 +210,25 @@ public class TokenService : ITokenService
 
         _logger.LogDebug("Token validation failed - no valid token found");
         return false;
+    }
+
+    public async Task RevokeByRefreshTokenAsync(string refreshToken)
+    {
+        if (string.IsNullOrEmpty(refreshToken)) return;
+
+        var hashedToken = TokenHasher.HashToken(refreshToken);
+        var keys = await _cache.SearchKeysAsync("session:*");
+
+        foreach (var key in keys)
+        {
+            var tokenModel = await _cache.GetAsync<RefreshToken>(key);
+            if (tokenModel != null && tokenModel.TokenHash == hashedToken && !tokenModel.Revoked)
+            {
+                tokenModel.Revoked = true;
+                await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+                _logger.LogInformation("Revoked session {Key} by refresh token", key);
+                return;
+            }
+        }
     }
 }

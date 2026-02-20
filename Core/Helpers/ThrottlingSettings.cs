@@ -13,4 +13,5 @@ public class ThrottleTier
     public int MaxRequestsPerMinute { get; set; }
     public int WindowSeconds { get; set; }
     public int MaxDelayMs { get; set; }
+    public int PenaltySeconds { get; set; } = 300;
 }

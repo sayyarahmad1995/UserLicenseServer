@@ -11,4 +11,8 @@ public interface ICacheRepository
     Task PublishInvalidationAsync(string key);
     void SubscribeToInvalidations(Func<string, Task> onInvalidation);
     Task RefreshAsync(string key, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Atomically increments a counter. Sets expiry only when the key is first created.
+    /// </summary>
+    Task<long> IncrementAsync(string key, TimeSpan? expiryOnCreate = null, CancellationToken cancellationToken = default);
 }

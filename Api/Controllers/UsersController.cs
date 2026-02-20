@@ -106,8 +106,11 @@ public class UsersController : BaseApiController
         _unitOfWork.UserRepository.Delete(user);
         await _unitOfWork.CompleteAsync();
 
-        await _userCache.InvalidateUsersAsync();
-        await _userCache.InvalidateUserAsync(id);
+        // Parallel cache invalidation
+        await Task.WhenAll(
+            _userCache.InvalidateUsersAsync(),
+            _userCache.InvalidateUserAsync(id)
+        );
 
         _logger.LogInformation("User {UserId} deleted successfully", id);
 
@@ -163,8 +166,11 @@ public class UsersController : BaseApiController
             _unitOfWork.UserRepository.Update(user);
             await _unitOfWork.CompleteAsync();
 
-            await _userCache.InvalidateUsersAsync();
-            await _userCache.InvalidateUserAsync(id);
+            // Parallel cache invalidation
+            await Task.WhenAll(
+                _userCache.InvalidateUsersAsync(),
+                _userCache.InvalidateUserAsync(id)
+            );
 
             var data = _mapper.Map<UserDto>(user);
             return ApiResult.Success(200, "User updated successfully.", data);
@@ -200,7 +206,7 @@ public class UsersController : BaseApiController
             var existingUser = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
             if (existingUser != null)
             {
-                _logger.LogWarning("UpdateUserProfile failed - Username {Username} already taken", dto.Username);
+                _logger.LogWarning("UpdateUserProfile failed - Username already taken for user {UserId}", id);
                 return ApiResult.Fail(400, "Username already taken");
             }
             user.Username = dto.Username.Trim();
@@ -212,7 +218,7 @@ public class UsersController : BaseApiController
             var existingUser = await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email);
             if (existingUser != null)
             {
-                _logger.LogWarning("UpdateUserProfile failed - Email {Email} already in use", dto.Email);
+                _logger.LogWarning("UpdateUserProfile failed - Email already in use for user {UserId}", id);
                 return ApiResult.Fail(400, "Email already in use");
             }
             user.Email = dto.Email.Trim();
@@ -222,8 +228,11 @@ public class UsersController : BaseApiController
         _unitOfWork.UserRepository.Update(user);
         await _unitOfWork.CompleteAsync();
 
-        await _userCache.InvalidateUsersAsync();
-        await _userCache.InvalidateUserAsync(id);
+        // Parallel cache invalidation
+        await Task.WhenAll(
+            _userCache.InvalidateUsersAsync(),
+            _userCache.InvalidateUserAsync(id)
+        );
 
         var data = _mapper.Map<UserDto>(user);
         _logger.LogInformation("User {UserId} profile updated successfully", id);

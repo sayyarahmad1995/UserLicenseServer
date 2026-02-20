@@ -22,8 +22,8 @@ public class TokenServiceTests
     private readonly Mock<ILogger<TokenService>> _loggerMock;
     private readonly TokenService _tokenService;
 
-    // JWT key must be at least 256 bits (32 bytes) for HS256
-    private const string ValidJwtKey = "this_is_a_valid_jwt_key_with_32_bytes!";
+    // JWT key must be at least 512 bits (64 bytes) for HS512
+    private const string ValidJwtKey = "this_is_a_valid_jwt_key_for_hmacsha512_it_must_be_at_least_64_bytes_long_padded_to_128_bytes_for_safety_to_pass_key_size_checks!!!!";
 
     public TokenServiceTests()
     {

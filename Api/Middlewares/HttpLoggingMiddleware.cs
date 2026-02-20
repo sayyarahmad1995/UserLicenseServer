@@ -23,57 +23,50 @@ public class HttpLoggingMiddleware
         var requestId = context.TraceIdentifier;
         var method = context.Request.Method;
         var path = context.Request.Path;
-        var queryString = context.Request.QueryString;
-        var clientIp = GetClientIpAddress(context);
 
-        // Log incoming request
-        LogRequest(requestId, method, path, queryString, clientIp);
+        // Log request
+        LogRequest(requestId, method, path);
 
-        // Capture original body stream
         var originalBodyStream = context.Response.Body;
+        var memoryStream = new MemoryStream();
 
         try
         {
-            using (var memoryStream = new MemoryStream())
-            {
-                context.Response.Body = memoryStream;
+            context.Response.Body = memoryStream;
 
-                await _next(context);
+            await _next(context);
 
-                stopwatch.Stop();
-
-                // Log response
-                LogResponse(requestId, context.Response.StatusCode, stopwatch.ElapsedMilliseconds, method, path);
-
-                // Reset stream position to beginning before copying
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                
-                // Copy memory stream back to original body stream
-                await memoryStream.CopyToAsync(originalBodyStream);
-            }
-        }
-        catch (Exception ex)
-        {
             stopwatch.Stop();
-            _logger.LogError(ex, "[{RequestId}] Unhandled exception in request {Method} {Path} - Duration: {ElapsedMs}ms",
-                requestId, method, path, stopwatch.ElapsedMilliseconds);
-            throw;
+
+            // Log response
+            LogResponse(requestId, context.Response.StatusCode, stopwatch.ElapsedMilliseconds, method, path);
+
+            // Only log response body in Development
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                var responseBody = await new StreamReader(memoryStream).ReadToEndAsync();
+                _logger.LogDebug("[{RequestId}] Response Body: {Body}", requestId, responseBody);
+            }
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            await memoryStream.CopyToAsync(originalBodyStream);
         }
         finally
         {
+            // Always restore the original stream, even if an exception occurs
             context.Response.Body = originalBodyStream;
+            await memoryStream.DisposeAsync();
         }
     }
 
-    private void LogRequest(string requestId, string method, PathString path, QueryString queryString, string clientIp)
+    private void LogRequest(string requestId, string method, PathString path)
     {
-        var fullPath = string.IsNullOrEmpty(queryString.Value)
-            ? path.Value ?? "/"
-            : $"{path.Value}{queryString.Value}";
+        var fullPath = path.Value ?? "/";
 
         _logger.LogInformation(
-            "[{RequestId}] Incoming request: {Method} {Path} from {ClientIp}",
-            requestId, method, fullPath, clientIp);
+            "[{RequestId}] Incoming request: {Method} {Path}",
+            requestId, method, fullPath);
     }
 
     private void LogResponse(string requestId, int statusCode, long elapsedMs, string method, PathString path)
@@ -95,19 +88,4 @@ public class HttpLoggingMiddleware
         }
     }
 
-    private static string GetClientIpAddress(HttpContext context)
-    {
-        if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-        {
-            var ips = forwardedFor.ToString().Split(',');
-            return ips[0].Trim();
-        }
-
-        if (context.Request.Headers.TryGetValue("X-Real-IP", out var realIp))
-        {
-            return realIp.ToString();
-        }
-
-        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    }
 }

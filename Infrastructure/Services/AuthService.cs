@@ -32,42 +32,42 @@ public class AuthService : IAuthService
 
     public async Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response)
     {
-        _logger.LogInformation("Login attempt for username: {Username}", dto.Username);
+        _logger.LogInformation("Login attempt initiated");
 
         try
         {
-            _authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken);
-
-            var isValid = await _tokenService.ValidateRefreshTokenAsync(existingRefreshToken!);
-            if (isValid)
+            // If this browser already has a session, revoke it to prevent duplicate sessions
+            if (_authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken)
+                && !string.IsNullOrEmpty(existingRefreshToken))
             {
-                _logger.LogInformation("User {Username} already has valid session", dto.Username);
-                return new LoginResultDto { Message = "You are already signed in" };
+                await _tokenService.RevokeByRefreshTokenAsync(existingRefreshToken);
+                _logger.LogInformation("Revoked existing browser session before new login");
             }
 
             var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
-                _logger.LogWarning("Login failed for username {Username} - invalid credentials", dto.Username);
+                _logger.LogWarning("Login failed - invalid credentials");
                 throw new InvalidCredentialsException();
             }
 
-            _logger.LogInformation("User {Username} credentials verified", dto.Username);
+            _logger.LogInformation("User {UserId} credentials verified", user.Id);
 
             var accessToken = _tokenService.GenerateAccessToken(user);
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
             var jti = jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti);
-            await _authHelper.SetAuthCookiesAsync(response, accessToken, refreshToken, _config);
+
+            // Parallel: set cookies + update last login
+            var cookieTask = _authHelper.SetAuthCookiesAsync(response, accessToken, refreshToken, _config);
+            user.LastLogin = DateTime.UtcNow;
+            var dbTask = _unitOfWork.CompleteAsync();
+            await Task.WhenAll(cookieTask, dbTask);
 
             var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
 
-            user.LastLogin = DateTime.UtcNow;
-            _unitOfWork.UserRepository.Update(user);
-            await _unitOfWork.CompleteAsync();
-
-            _logger.LogInformation("Login successful for user {Username} with ID {UserId}", dto.Username, user.Id);
+            _logger.LogInformation("Login successful for user {UserId}", user.Id);
 
             return new LoginResultDto
             {
@@ -75,14 +75,13 @@ public class AuthService : IAuthService
                 Message = "Login successful"
             };
         }
-        catch (InvalidCredentialsException ex)
+        catch (InvalidCredentialsException)
         {
-            _logger.LogWarning(ex, "Invalid credentials exception during login");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during login for username {Username}", dto.Username);
+            _logger.LogError(ex, "Unexpected error during login");
             throw;
         }
     }

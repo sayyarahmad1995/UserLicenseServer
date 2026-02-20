@@ -82,6 +82,9 @@ public static class AppServiceExtension
         services.AddScoped<IUserCacheService, UserCacheService>();
 
         var jwtKey = config["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtKey) || jwtKey.Length < 64)
+            throw new InvalidOperationException("JWT Key must be at least 64 characters long for HmacSha512.");
+
         var jwtIssuer = config["Jwt:Issuer"];
         var jwtAudience = config["Jwt:Audience"];
         services.AddAuthentication(options =>
@@ -101,7 +104,8 @@ public static class AppServiceExtension
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
-                RoleClaimType = ClaimTypes.Role
+                RoleClaimType = ClaimTypes.Role,
+                ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha512 }
             };
             options.Events = new JwtBearerEvents
             {

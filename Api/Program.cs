@@ -8,9 +8,10 @@ builder.Services.AddAppServices(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseMiddleware<ThrottlingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<HttpLoggingMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<ThrottlingMiddleware>();
 
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 

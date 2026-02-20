@@ -20,7 +20,7 @@
     }
   },
   "Jwt": {
-    "Key": "supersecretkey1234567890",
+    "Key": "your-secret-key-here-must-be-at-least-64-characters-long-for-hmacsha512!!",
     "Issuer": "localhost",
     "Audience": "localhostClient",
     "AccessTokenExpiryMinutes": "15",
@@ -36,19 +36,22 @@
       "ThrottleThreshold": 30,
       "MaxRequestsPerMinute": 60,
       "WindowSeconds": 60,
-      "MaxDelayMs": 5000
+      "MaxDelayMs": 5000,
+      "PenaltySeconds": 600
     },
     "Auth": {
       "ThrottleThreshold": 3,
       "MaxRequestsPerMinute": 5,
       "WindowSeconds": 60,
-      "MaxDelayMs": 10000
+      "MaxDelayMs": 10000,
+      "PenaltySeconds": 300
     },
     "User": {
       "ThrottleThreshold": 60,
       "MaxRequestsPerMinute": 120,
       "WindowSeconds": 60,
-      "MaxDelayMs": 3000
+      "MaxDelayMs": 3000,
+      "PenaltySeconds": 900
     }
   }
 }

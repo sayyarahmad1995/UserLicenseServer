@@ -34,7 +34,7 @@ public class AuthControllerIntegrationTests : IAsyncLifetime
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        { "Jwt:Key", "this_is_a_valid_jwt_key_with_32_bytes!" },
+                        { "Jwt:Key", "this_is_a_valid_jwt_key_for_hmacsha512_it_must_be_at_least_64_bytes_long_padded_to_128_bytes_for_safety_to_pass_key_size_checks!!!!" },
                         { "Jwt:Issuer", "https://yourdomain.com" },
                         { "Jwt:Audience", "YourAppAudience" },
                         { "Jwt:Roles:0", "Admin" },
@@ -401,4 +401,14 @@ internal class TestCacheRepository : ICacheRepository
     public void SubscribeToInvalidations(Func<string, Task> onInvalidation) { }
     
     public Task RefreshAsync(string key, TimeSpan? expiry = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task<long> IncrementAsync(string key, TimeSpan? expiryOnCreate = null, CancellationToken cancellationToken = default)
+    {
+        long newValue = 1;
+        if (_cache.TryGetValue(key, out var item) && DateTime.UtcNow < item.expiry && item.value is long current)
+            newValue = current + 1;
+        var expiryTime = newValue == 1 && expiryOnCreate.HasValue ? DateTime.UtcNow.Add(expiryOnCreate.Value) : (newValue == 1 ? DateTime.MaxValue : item.expiry);
+        _cache[key] = (newValue, expiryTime);
+        return Task.FromResult(newValue);
+    }
 }

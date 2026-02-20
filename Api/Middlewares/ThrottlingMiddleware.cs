@@ -41,18 +41,18 @@ public class ThrottlingMiddleware
         var globalResult = await CheckThrottling(
             cache, $"throttle:global:{ipAddress}", _settings.Global);
 
-        if (globalResult == ThrottleResult.Blocked)
+        if (globalResult.Status == ThrottleStatus.Blocked)
         {
             _logger.LogWarning(
                 "Global rate limit reached for IP: {IpAddress} on {Method} {Path}",
                 ipAddress, method, path);
             await WriteRateLimitResponse(context,
                 "Too many requests. Please wait before trying again.",
-                _settings.Global);
+                globalResult);
             return;
         }
 
-        if (globalResult == ThrottleResult.Throttled)
+        if (globalResult.Status == ThrottleStatus.Throttled)
         {
             var delay = await GetCurrentDelay(cache, $"throttle:global:{ipAddress}", _settings.Global);
             _logger.LogInformation(
@@ -70,18 +70,18 @@ public class ThrottlingMiddleware
             var userResult = await CheckThrottling(
                 cache, $"throttle:user:{userId}", _settings.User);
 
-            if (userResult == ThrottleResult.Blocked)
+            if (userResult.Status == ThrottleStatus.Blocked)
             {
                 _logger.LogWarning(
                     "User rate limit reached for User: {UserId} on {Method} {Path}",
                     userId, method, path);
                 await WriteRateLimitResponse(context,
                     "Too many requests. Please slow down.",
-                    _settings.User);
+                    userResult);
                 return;
             }
 
-            if (userResult == ThrottleResult.Throttled)
+            if (userResult.Status == ThrottleStatus.Throttled)
             {
                 var delay = await GetCurrentDelay(cache, $"throttle:user:{userId}", _settings.User);
                 _logger.LogInformation(
@@ -99,18 +99,18 @@ public class ThrottlingMiddleware
             var authResult = await CheckThrottling(
                 cache, $"throttle:auth:{ipAddress}:{path}", _settings.Auth);
 
-            if (authResult == ThrottleResult.Blocked)
+            if (authResult.Status == ThrottleStatus.Blocked)
             {
                 _logger.LogWarning(
                     "Auth rate limit reached for IP: {IpAddress} on {Method} {Path}",
                     ipAddress, method, path);
                 await WriteRateLimitResponse(context,
                     "Too many authentication attempts. Please try again later.",
-                    _settings.Auth);
+                    authResult);
                 return;
             }
 
-            if (authResult == ThrottleResult.Throttled)
+            if (authResult.Status == ThrottleStatus.Throttled)
             {
                 var delay = await GetCurrentDelay(cache, $"throttle:auth:{ipAddress}:{path}", _settings.Auth);
                 _logger.LogWarning(
@@ -127,18 +127,93 @@ public class ThrottlingMiddleware
 
     #region Throttle Logic
 
-    private static async Task<ThrottleResult> CheckThrottling(
+    private static async Task<ThrottleInfo> CheckThrottling(
         ICacheRepository cache, string key, ThrottleTier tier)
     {
+        var penaltyKey = $"{key}:penalty";       // stores Unix timestamp of penalty start
+        var penaltyUsedKey = $"{key}:penalty_used"; // tracks total attempts used during penalty
+
+        var penaltyStartRaw = await cache.GetAsync<long?>(penaltyKey);
+
+        if (penaltyStartRaw.HasValue)
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var elapsedSeconds = (int)(now - penaltyStartRaw.Value);
+            var elapsedMinutes = elapsedSeconds / 60;
+            var allowedAttempts = elapsedMinutes; // 0 in first min, 1 after 1 min, 2 after 2 min...
+            var penaltyRemaining = Math.Max(0, tier.PenaltySeconds - elapsedSeconds);
+            var secondsUntilNextRelease = 60 - (elapsedSeconds % 60);
+
+            var usedAttempts = await cache.GetAsync<int?>(penaltyUsedKey) ?? 0;
+            var remaining = Math.Max(0, allowedAttempts - usedAttempts);
+
+            if (usedAttempts >= allowedAttempts)
+            {
+                if (allowedAttempts > 0)
+                {
+                    // Reset penalty — recalculate from new start
+                    var resetNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    await cache.SetAsync(penaltyKey, resetNow, TimeSpan.FromSeconds(tier.PenaltySeconds));
+                    await cache.RemoveAsync(penaltyUsedKey);
+                    penaltyRemaining = tier.PenaltySeconds;
+                    secondsUntilNextRelease = 60;
+                }
+
+                return new ThrottleInfo
+                {
+                    Status = ThrottleStatus.Blocked,
+                    InPenalty = true,
+                    RemainingAttempts = 0,
+                    PenaltyRemainingSeconds = penaltyRemaining,
+                    NextAttemptInSeconds = secondsUntilNextRelease
+                };
+            }
+
+            // Consume one released attempt
+            await cache.IncrementAsync(penaltyUsedKey, TimeSpan.FromSeconds(tier.PenaltySeconds));
+            return new ThrottleInfo
+            {
+                Status = ThrottleStatus.Allowed,
+                InPenalty = true,
+                RemainingAttempts = remaining - 1, // just consumed one
+                PenaltyRemainingSeconds = penaltyRemaining,
+                NextAttemptInSeconds = remaining - 1 > 0 ? 0 : secondsUntilNextRelease
+            };
+        }
+
+        // Normal mode
         var requestCount = await IncrementCounter(cache, key, tier.WindowSeconds);
 
         if (requestCount > tier.MaxRequestsPerMinute)
-            return ThrottleResult.Blocked;
+        {
+            var nowTs = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            await cache.SetAsync(penaltyKey, nowTs, TimeSpan.FromSeconds(tier.PenaltySeconds));
+            return new ThrottleInfo
+            {
+                Status = ThrottleStatus.Blocked,
+                InPenalty = true,
+                RemainingAttempts = 0,
+                PenaltyRemainingSeconds = tier.PenaltySeconds,
+                NextAttemptInSeconds = 60
+            };
+        }
+
+        var normalRemaining = tier.MaxRequestsPerMinute - requestCount;
 
         if (requestCount > tier.ThrottleThreshold)
-            return ThrottleResult.Throttled;
+            return new ThrottleInfo
+            {
+                Status = ThrottleStatus.Throttled,
+                InPenalty = false,
+                RemainingAttempts = normalRemaining
+            };
 
-        return ThrottleResult.Allowed;
+        return new ThrottleInfo
+        {
+            Status = ThrottleStatus.Allowed,
+            InPenalty = false,
+            RemainingAttempts = normalRemaining
+        };
     }
 
     private static async Task<int> GetCurrentDelay(
@@ -167,17 +242,9 @@ public class ThrottlingMiddleware
     /// </summary>
     private static async Task<int> IncrementCounter(ICacheRepository cache, string key, int windowSeconds)
     {
-        var currentCount = await cache.GetAsync<int?>(key);
-
-        if (currentCount == null)
-        {
-            await cache.SetAsync(key, 1, TimeSpan.FromSeconds(windowSeconds));
-            return 1;
-        }
-
-        var newCount = currentCount.Value + 1;
-        await cache.SetAsync(key, newCount);
-        return newCount;
+        // Atomic increment — TTL is only set when the key is first created
+        var count = await cache.IncrementAsync(key, TimeSpan.FromSeconds(windowSeconds));
+        return (int)count;
     }
 
     #endregion
@@ -198,17 +265,20 @@ public class ThrottlingMiddleware
     }
 
     private static async Task WriteRateLimitResponse(
-        HttpContext context, string message, ThrottleTier tier)
+        HttpContext context, string message, ThrottleInfo info)
     {
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.Response.ContentType = "application/json";
-        context.Response.Headers.Append("Retry-After", tier.WindowSeconds.ToString());
+        context.Response.Headers.Append("Retry-After", info.NextAttemptInSeconds.ToString());
 
         var response = new
         {
             StatusCode = 429,
             Message = message,
-            RetryAfterSeconds = tier.WindowSeconds
+            RemainingAttempts = info.RemainingAttempts,
+            NextAttemptInSeconds = info.NextAttemptInSeconds,
+            PenaltyRemainingSeconds = info.InPenalty ? info.PenaltyRemainingSeconds : (int?)null,
+            InPenalty = info.InPenalty
         };
 
         await context.Response.WriteAsJsonAsync(response);
@@ -217,9 +287,18 @@ public class ThrottlingMiddleware
     #endregion
 }
 
-internal enum ThrottleResult
+internal enum ThrottleStatus
 {
     Allowed,
     Throttled,
     Blocked
+}
+
+internal class ThrottleInfo
+{
+    public ThrottleStatus Status { get; init; }
+    public bool InPenalty { get; init; }
+    public int RemainingAttempts { get; init; }
+    public int PenaltyRemainingSeconds { get; init; }
+    public int NextAttemptInSeconds { get; init; }
 }

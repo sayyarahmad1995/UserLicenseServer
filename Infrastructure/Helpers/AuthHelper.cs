@@ -16,7 +16,8 @@ public class AuthHelper : IAuthHelper
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
+            Expires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes),
+            Path = "/api/v1"
         };
 
         var refreshOptions = new CookieOptions
@@ -24,7 +25,8 @@ public class AuthHelper : IAuthHelper
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(refreshExpiryDays)
+            Expires = DateTime.UtcNow.AddDays(refreshExpiryDays),
+            Path = "/api/v1/auth"
         };
 
         response.Cookies.Append("accessToken", accessToken, accessOptions);
@@ -35,8 +37,18 @@ public class AuthHelper : IAuthHelper
 
     public void ClearAuthCookies(HttpResponse response)
     {
-        response.Cookies.Delete("accessToken");
-        response.Cookies.Delete("refreshToken");
+        var accessDeleteOptions = new CookieOptions
+        {
+            Path = "/api/v1"
+        };
+
+        var refreshDeleteOptions = new CookieOptions
+        {
+            Path = "/api/v1/auth"
+        };
+
+        response.Cookies.Delete("accessToken", accessDeleteOptions);
+        response.Cookies.Delete("refreshToken", refreshDeleteOptions);
     }
 
     public bool TryGetCookie(HttpRequest request, string key, out string? value)

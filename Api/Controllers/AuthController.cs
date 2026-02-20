@@ -4,11 +4,13 @@ using AutoMapper;
 using Core.DTOs;
 using Core.Entities;
 using Core.Enums;
+using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
 using Infrastructure.Services.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -53,6 +55,16 @@ public class AuthController : BaseApiController
     }
 
     /// <summary>
+    /// Safely extracts and parses the user ID from JWT claims.
+    /// </summary>
+    private bool TryGetUserId(out int userId)
+    {
+        userId = 0;
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return claim != null && int.TryParse(claim, out userId);
+    }
+
+    /// <summary>
     /// Authenticates a user and returns JWT access token and refresh token.
     /// </summary>
     /// <param name="dto">Login credentials (username and password)</param>
@@ -69,17 +81,22 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var authKey = $"throttle:auth:{ipAddress}:/api/v1/auth/login";
+
         try
         {
-            _logger.LogInformation("Login endpoint called for user {Username}", dto.Username);
+            _logger.LogInformation("Login attempt initiated");
             var result = await _authService.LoginAsync(dto, Response);
-            _logger.LogInformation("Login successful for {Username}", dto.Username);
+            _logger.LogInformation("Login successful");
             return ApiResult.Success(200, result.Message, result.AccessTokenExpires != null ? new { result.AccessTokenExpires } : null);
         }
-        catch (InvalidCredentialsException ex)
+        catch (InvalidCredentialsException)
         {
-            _logger.LogWarning(ex, "Login failed - invalid credentials");
-            return ApiResult.Fail(401, "Invalid username or password");
+            _logger.LogWarning("Login failed - invalid credentials");
+
+            var attemptInfo = await GetRemainingAttempts(authKey);
+            return ApiResult.Fail(401, "Invalid username or password", attemptInfo);
         }
         catch (TokenException ex)
         {
@@ -91,6 +108,50 @@ public class AuthController : BaseApiController
             _logger.LogError(ex, "Unexpected error during login");
             return ApiResult.Fail(500, "Internal server error");
         }
+    }
+
+    /// <summary>
+    /// Returns remaining attempts and penalty info for the auth throttle key.
+    /// </summary>
+    private async Task<object> GetRemainingAttempts(string authKey)
+    {
+        var settings = HttpContext.RequestServices
+            .GetRequiredService<IOptions<ThrottlingSettings>>().Value.Auth;
+
+        var penaltyKey = $"{authKey}:penalty";
+        var penaltyUsedKey = $"{authKey}:penalty_used";
+
+        var penaltyStartRaw = await _cacheRepository.GetAsync<long?>(penaltyKey);
+
+        if (penaltyStartRaw.HasValue)
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var elapsedSeconds = (int)(now - penaltyStartRaw.Value);
+            var elapsedMinutes = elapsedSeconds / 60;
+            var usedAttempts = await _cacheRepository.GetAsync<int?>(penaltyUsedKey) ?? 0;
+            var remaining = Math.Max(0, elapsedMinutes - usedAttempts);
+            var penaltyRemaining = Math.Max(0, settings.PenaltySeconds - elapsedSeconds);
+            var nextAttemptIn = remaining > 0 ? 0 : 60 - (elapsedSeconds % 60);
+
+            return new
+            {
+                RemainingAttempts = remaining,
+                NextAttemptInSeconds = nextAttemptIn,
+                PenaltyRemainingSeconds = penaltyRemaining,
+                InPenalty = true
+            };
+        }
+
+        var currentCount = await _cacheRepository.GetAsync<int?>(authKey) ?? 0;
+        var normalRemaining = Math.Max(0, settings.MaxRequestsPerMinute - currentCount);
+
+        return new
+        {
+            RemainingAttempts = normalRemaining,
+            NextAttemptInSeconds = (int?)null,
+            PenaltyRemainingSeconds = (int?)null,
+            InPenalty = false
+        };
     }
 
     /// <summary>
@@ -109,23 +170,28 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        _logger.LogInformation("Registration attempt for username {Username} and email {Email}", dto.Username, dto.Email);
+        _logger.LogInformation("Registration attempt initiated");
 
         var errors = new Dictionary<string, string[]>();
         if (await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email!) is not null)
         {
-            _logger.LogWarning("Registration failed - email {Email} already in use", dto.Email);
+            _logger.LogWarning("Registration failed - email already in use");
             errors.Add("Email", new[] { "Email already in use." });
         }
 
         if (await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username!) is not null)
         {
-            _logger.LogWarning("Registration failed - username {Username} already taken", dto.Username);
+            _logger.LogWarning("Registration failed - username already taken");
             errors.Add("Username", new[] { "Username already taken." });
         }
 
         if (errors.Count > 0)
-            return ApiResult.Validation(errors);
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var authKey = $"throttle:auth:{ipAddress}:/api/v1/auth/register";
+            var attemptInfo = await GetRemainingAttempts(authKey);
+            return ApiResult.Validation(errors, attemptInfo);
+        }
 
         var user = _mapper.Map<User>(dto);
 
@@ -136,7 +202,7 @@ public class AuthController : BaseApiController
         _unitOfWork.UserRepository.Add(user);
         await _unitOfWork.CompleteAsync();
 
-        _logger.LogInformation("User registered successfully - username {Username}, ID {UserId}", dto.Username, user.Id);
+        _logger.LogInformation("User registered successfully with ID {UserId}", user.Id);
 
         return ApiResult.Success(200, "Registered successfully.");
     }
@@ -155,36 +221,32 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
+        if (!TryGetUserId(out var parsedUserId))
         {
             _logger.LogWarning("GetCurrentUser called without valid user ID in claims");
             return ApiResult.Fail(401, "Unauthorized.");
         }
 
-        _logger.LogDebug("Fetching current user profile for user {UserId}", userId);
+        _logger.LogDebug("Fetching current user profile for user {UserId}", parsedUserId);
 
-        var cached = await _userCache.GetUserAsync(int.Parse(userId!));
-
-        UserDto? userDto;
+        var cached = await _userCache.GetUserAsync(parsedUserId);
         if (cached != null)
         {
-            _logger.LogDebug("User {UserId} profile retrieved from cache", userId);
-            userDto = _mapper.Map<UserDto>(cached);
-            return ApiResult.Success(200, "User retrieved successfully.", userDto);
+            _logger.LogDebug("User {UserId} profile retrieved from cache", parsedUserId);
+            var cachedUserDto = _mapper.Map<UserDto>(cached);
+            return ApiResult.Success(200, "User retrieved successfully.", cachedUserDto);
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(int.Parse(userId));
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(parsedUserId);
         if (user == null)
         {
-            _logger.LogWarning("User {UserId} not found in database", userId);
+            _logger.LogWarning("User {UserId} not found in database", parsedUserId);
             return ApiResult.Fail(404, "User not found.");
         }
 
-        userDto = _mapper.Map<UserDto>(cached != null ? cached : user);
-
-        await _userCache.CacheUserAsync(int.Parse(userId), userDto);
-        _logger.LogDebug("User {UserId} profile cached", userId);
+        var userDto = _mapper.Map<UserDto>(user);
+        await _userCache.CacheUserAsync(parsedUserId, userDto);
+        _logger.LogDebug("User {UserId} profile cached", parsedUserId);
 
         return ApiResult.Success(200, "User retrieved successfully.", userDto);
     }
@@ -196,6 +258,7 @@ public class AuthController : BaseApiController
     /// <response code="200">Token refreshed successfully</response>
     /// <response code="401">Refresh token missing, invalid, or expired</response>
     /// <response code="500">Internal server error</response>
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -251,13 +314,12 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var jti = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
 
-        if (userId == null || jti == null)
+        if (!TryGetUserId(out var parsedUserId) || jti == null)
             return ApiResult.Fail(400, "Invalid session.");
 
-        await _tokenService.RevokeSessionAsync(int.Parse(userId), jti);
+        await _tokenService.RevokeSessionAsync(parsedUserId, jti);
         _authHelper.ClearAuthCookies(Response);
 
         return ApiResult.Success(200, "Logged out successfully.");
@@ -275,14 +337,13 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAll()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
-            return Unauthorized(new ApiResponse(401, "Invalid session."));
+        if (!TryGetUserId(out var parsedUserId))
+            return ApiResult.Fail(401, "Invalid session.");
 
-        await _tokenService.RevokeAllSessionsAsync(int.Parse(userId));
+        await _tokenService.RevokeAllSessionsAsync(parsedUserId);
         _authHelper.ClearAuthCookies(Response);
 
-        await _cacheRepository.PublishInvalidationAsync($"session:{userId}*");
+        await _cacheRepository.PublishInvalidationAsync($"session:{parsedUserId}*");
 
         return ApiResult.Success(200, "All sessions logged out successfully.");
     }

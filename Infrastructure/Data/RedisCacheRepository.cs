@@ -247,4 +247,37 @@ public class RedisCacheRepository : ICacheRepository
             key
         );
     }
+
+    public async Task<long> IncrementAsync(string key, TimeSpan? expiryOnCreate = null, CancellationToken cancellationToken = default)
+    {
+        var token = GetCancellationToken(cancellationToken);
+        try
+        {
+            var fullKey = BuildKey(key);
+            var newValue = await _database.StringIncrementAsync(fullKey).WaitAsync(token).ConfigureAwait(false);
+
+            // Only set expiry when key is first created (value == 1)
+            if (newValue == 1 && expiryOnCreate.HasValue)
+            {
+                await _database.KeyExpireAsync(fullKey, expiryOnCreate.Value).WaitAsync(token).ConfigureAwait(false);
+            }
+
+            return newValue;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Redis INCR operation timed out for key '{Key}'.", key);
+            return 0;
+        }
+        catch (RedisConnectionException rex)
+        {
+            _logger.LogError(rex, "Redis connection issue during INCR for key '{Key}'.", key);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during Redis INCR for key '{Key}'.", key);
+            return 0;
+        }
+    }
 }

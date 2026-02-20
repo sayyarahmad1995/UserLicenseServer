@@ -42,11 +42,12 @@ public static class ApiResult
         };
     }
 
-    public static ActionResult Validation(IDictionary<string, string[]> errors)
+    public static ActionResult Validation(IDictionary<string, string[]> errors, object? data = null)
     {
         var response = new ApiValidationErrorResponse
         {
-            Errors = errors
+            Errors = errors,
+            Data = data
         };
         return new BadRequestObjectResult(response);
     }

@@ -1,13 +1,68 @@
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using StackExchange.Redis;
 
 namespace Infrastructure.Services;
 
 public class HealthService
 {
     private readonly IConfiguration _config;
-    public HealthService(IConfiguration config) => _config = config;
+    private readonly IConnectionMultiplexer _redis;
+    public HealthService(IConfiguration config, IConnectionMultiplexer redis)
+    {
+        _config = config;
+        _redis = redis;
+    }
+
+    /// <summary>
+    /// Quick liveness check — verifies DB and Redis are reachable.
+    /// Used by Docker HEALTHCHECK and container orchestrators.
+    /// </summary>
+    public async Task<LiveHealthResult> GetLiveHealthAsync(CancellationToken ct = default)
+    {
+        var result = new LiveHealthResult { Timestamp = DateTime.UtcNow };
+
+        // Check PostgreSQL
+        try
+        {
+            var connString = _config.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrEmpty(connString))
+            {
+                await using var conn = new NpgsqlConnection(connString);
+                await conn.OpenAsync(ct);
+                await conn.ExecuteScalarAsync<int>("SELECT 1;");
+                result.Database = "Healthy";
+            }
+            else
+            {
+                result.Database = "Not configured";
+            }
+        }
+        catch
+        {
+            result.Database = "Unreachable";
+        }
+
+        // Check Redis
+        try
+        {
+            var db = _redis.GetDatabase();
+            var pong = await db.PingAsync();
+            result.Redis = "Healthy";
+            result.RedisLatencyMs = (int)pong.TotalMilliseconds;
+        }
+        catch
+        {
+            result.Redis = "Unreachable";
+        }
+
+        result.Status = (result.Database == "Healthy" && result.Redis == "Healthy")
+            ? "Healthy"
+            : "Degraded";
+
+        return result;
+    }
 
     public async Task<DatabaseHealthInfo> GetDatabaseHealthAsync(CancellationToken ct = default)
     {

@@ -14,12 +14,20 @@ public class HealthController : BaseApiController
     }
 
     /// <summary>
-    /// Public shallow health check.
+    /// Public liveness check — verifies API, database, and Redis are reachable.
+    /// Used by Docker HEALTHCHECK and container orchestrators.
     /// </summary>
+    /// <response code="200">All services healthy</response>
+    /// <response code="503">One or more services degraded</response>
     [HttpGet]
-    public IActionResult GetHealth()
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetHealth(CancellationToken ct)
     {
-        return ApiResult.Success(200, "Healthy");
+        var result = await _healthService.GetLiveHealthAsync(ct);
+        var statusCode = result.Status == "Healthy" ? 200 : 503;
+        return ApiResult.Success(statusCode, result.Status, result);
     }
 
     /// <summary>

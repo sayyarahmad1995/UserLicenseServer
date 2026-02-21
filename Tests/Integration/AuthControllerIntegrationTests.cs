@@ -147,7 +147,7 @@ public class AuthControllerIntegrationTests : IAsyncLifetime
 
         var response = await _client.PostAsync("/api/v1/auth/register", content);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("Registered successfully");
     }

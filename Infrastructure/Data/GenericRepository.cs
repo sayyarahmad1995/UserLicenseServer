@@ -19,13 +19,13 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
        => await _context.Set<T>().FindAsync(id);
 
     public async Task<IReadOnlyList<T>> ListAllAsync()
-       => await _context.Set<T>().ToListAsync();
+       => await _context.Set<T>().AsNoTracking().ToListAsync();
 
     public async Task<T?> GetEntityWithSpec(ISpecification<T> spec)
-       => await ApplySpecification(spec).FirstOrDefaultAsync();
+       => await ApplySpecification(spec).AsNoTracking().FirstOrDefaultAsync();
 
     public async Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec)
-       => await ApplySpecification(spec).ToListAsync();
+       => await ApplySpecification(spec).AsNoTracking().ToListAsync();
 
     public async Task<int> CountAsync(ISpecification<T> spec)
        => await ApplySpecification(spec).CountAsync();
@@ -34,10 +34,10 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
        => SpecificationEvaluator<T>.GetQuery(_context.Set<T>().AsQueryable(), spec);
 
     public async Task<T?> FindByEntityAsync(Expression<Func<T, bool>> expression)
-       => await _context.Set<T>().FirstOrDefaultAsync(expression);
+       => await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(expression);
 
     public async Task<IReadOnlyList<T>> FindAllByEntityAsync(Expression<Func<T, bool>> expression)
-     => await _context.Set<T>().Where(expression).ToListAsync();
+     => await _context.Set<T>().AsNoTracking().Where(expression).ToListAsync();
 
     public void Add(T entity)
        => _context.Set<T>().Add(entity);

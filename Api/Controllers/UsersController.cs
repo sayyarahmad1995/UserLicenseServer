@@ -91,7 +91,7 @@ public class UsersController : BaseApiController
         return ApiResult.Success(200, "User retrieved successfully.", dto);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
         _logger.LogInformation("DeleteUser called for user {UserId}", id);

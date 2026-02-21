@@ -6,7 +6,7 @@ namespace Infrastructure.Data.Seed;
 
 public class DbInitializer
 {
-    public static async Task InitializeAsync(IServiceProvider serviceProvider)
+    public static async Task InitializeAsync(IServiceProvider serviceProvider, bool isDevelopment = false)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -20,13 +20,15 @@ public class DbInitializer
             await context.Database.MigrateAsync();
         }
 
-        // Seed the admin user (only run once, or comment out if already seeded)
+        // Seed the admin user (only run once, idempotent)
         await AdminSeeder.SeedAsync(context, serviceProvider, logger);
 
-        // Seed development data (users, licenses, etc.)
-        // ⚠️ Comment out these lines in production
-        await UserSeeder.SeedAsync(context, logger);
-        await LicenseSeeder.SeedAsync(context, logger);
+        // Seed development data only in development environment
+        if (isDevelopment)
+        {
+            await UserSeeder.SeedAsync(context, logger);
+            await LicenseSeeder.SeedAsync(context, logger);
+        }
 
         logger.LogInformation("✅ Database initialization complete.");
     }

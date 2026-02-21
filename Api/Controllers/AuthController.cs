@@ -199,7 +199,7 @@ public class AuthController : BaseApiController
 
         _logger.LogInformation("User registered successfully with ID {UserId}", user.Id);
 
-        return ApiResult.Success(200, "Registered successfully.");
+        return ApiResult.Created("Registered successfully.");
     }
 
     /// <summary>

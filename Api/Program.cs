@@ -32,7 +32,7 @@ if (app.Environment.IsDevelopment())
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    await DbInitializer.InitializeAsync(app.Services);
+    await DbInitializer.InitializeAsync(app.Services, app.Environment.IsDevelopment());
 }
 
 app.UseHttpsRedirection();

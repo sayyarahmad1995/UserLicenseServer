@@ -22,6 +22,11 @@ namespace Infrastructure.Data.Config
                .HasDatabaseName("IX_Licenses_UserId_Status_Active")
                .HasFilter("\"Status\" = 'Active'");
 
+            // Unique index on LicenseKey to prevent duplicates and enable O(1) lookup
+            builder.HasIndex(l => l.LicenseKey)
+               .IsUnique()
+               .HasDatabaseName("IX_Licenses_LicenseKey");
+
         }
     }
 }

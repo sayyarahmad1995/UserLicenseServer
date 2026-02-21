@@ -1,9 +1,13 @@
+#if DEBUG
 using Api.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
 namespace Api.Controllers;
 
+/// <summary>
+/// Test endpoints only available in Debug builds. Not compiled in Release/Production.
+/// </summary>
 public class TestController : BaseApiController
 {
     [HttpGet("ok")]
@@ -75,3 +79,4 @@ public class TestValidationDto
     [EmailAddress(ErrorMessage = "Invalid email format")]
     public string? Email { get; set; }
 }
+#endif

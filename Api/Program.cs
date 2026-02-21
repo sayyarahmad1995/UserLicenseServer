@@ -2,6 +2,7 @@ using Api.Extensions;
 using Api.Middlewares;
 using Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.HttpOverrides;
+using Prometheus;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,7 +74,13 @@ app.UseAuthorization();
 // 4. Throttling runs after auth so context.User is populated for user-tier throttling
 app.UseMiddleware<ThrottlingMiddleware>();
 
+// 5. Prometheus request metrics (after routing so endpoint metadata is available)
+app.UseMiddleware<PrometheusRequestMiddleware>();
+
 app.MapControllers();
+
+// Prometheus /metrics endpoint — unauthenticated for scraping
+app.MapMetrics();
 
 app.Run();
 

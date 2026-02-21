@@ -67,6 +67,7 @@ public static class AppServiceExtension
             services.AddScoped<IEmailService, ConsoleEmailService>();
 
         services.AddHostedService<LicenseExpirationJob>();
+        services.AddHostedService<AppMetricsService>();
 
         services.Configure<ApiBehaviorOptions>(opt =>
         {

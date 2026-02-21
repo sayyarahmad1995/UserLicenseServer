@@ -56,5 +56,15 @@
   },
   "Cors": {
     "AllowedOrigins": [ "http://localhost:3000", "http://localhost:5173" ]
+  },
+  "Email": {
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": 587,
+    "SmtpUser": "your-email@gmail.com",
+    "SmtpPass": "your-app-password",
+    "FromEmail": "your-email@gmail.com",
+    "FromName": "EazeCad",
+    "EnableSsl": true,
+    "FrontendBaseUrl": "http://localhost:3000"
   }
 }

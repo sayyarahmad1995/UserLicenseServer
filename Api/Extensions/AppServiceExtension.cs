@@ -56,8 +56,15 @@ public static class AppServiceExtension
         services.AddScoped<IAuthHelper, AuthHelper>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ILicenseService, LicenseService>();
-        services.AddScoped<IEmailService, ConsoleEmailService>();
         services.AddScoped<IAuditService, AuditService>();
+
+        // Email: use SMTP when configured, otherwise log-only for development
+        services.Configure<EmailSettings>(config.GetSection("Email"));
+        var smtpHost = config["Email:SmtpHost"];
+        if (!string.IsNullOrWhiteSpace(smtpHost))
+            services.AddScoped<IEmailService, SmtpEmailService>();
+        else
+            services.AddScoped<IEmailService, ConsoleEmailService>();
 
         services.AddHostedService<LicenseExpirationJob>();
 

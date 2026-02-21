@@ -253,7 +253,10 @@ public class ThrottlingMiddleware
 
     private static bool IsAuthEndpoint(string path)
     {
-        return path.Contains("/auth/login") || path.Contains("/auth/register");
+        return path.Contains("/auth/login")
+            || path.Contains("/auth/register")
+            || path.Contains("/auth/resend-verification")
+            || path.Contains("/auth/forgot-password");
     }
 
     private static void AddThrottleHeaders(HttpContext context, ThrottleTier tier, int delay)

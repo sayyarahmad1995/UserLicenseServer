@@ -6,7 +6,7 @@ namespace Infrastructure.Helpers;
 
 public class AuthHelper : IAuthHelper
 {
-    public async Task SetAuthCookiesAsync(HttpResponse response, string accessToken, string refreshToken, IConfiguration config)
+    public void SetAuthCookies(HttpResponse response, string accessToken, string refreshToken, IConfiguration config)
     {
         var accessExpiryMinutes = int.Parse(config["Jwt:AccessTokenExpiryMinutes"]!);
         var refreshExpiryDays = int.Parse(config["Jwt:RefreshTokenExpiryDays"]!);
@@ -31,8 +31,6 @@ public class AuthHelper : IAuthHelper
 
         response.Cookies.Append("accessToken", accessToken, accessOptions);
         response.Cookies.Append("refreshToken", refreshToken, refreshOptions);
-
-        await Task.CompletedTask;
     }
 
     public void ClearAuthCookies(HttpResponse response)

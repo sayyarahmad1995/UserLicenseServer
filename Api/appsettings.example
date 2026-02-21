@@ -9,13 +9,13 @@
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DefaultConnection": "Server=localhost;port=5432;Database=localdb;User Id=example;Password=example;TrustServerCertificate=True;",
-    "Redis": "localhost:6379,user=admin,password=Admin@123"
+    "Redis": "localhost:6379,user=admin,password=your-redis-password"
   },
   "SeedData": {
     "AdminUser": {
       "Username": "admin",
-      "Email": "mail@example.com",
-      "Password": "Admin@123",
+      "Email": "admin@example.com",
+      "Password": "YourStrongPassword@123",
       "Role": "Admin"
     }
   },
@@ -53,5 +53,8 @@
       "MaxDelayMs": 3000,
       "PenaltySeconds": 900
     }
+  },
+  "Cors": {
+    "AllowedOrigins": [ "http://localhost:3000", "http://localhost:5173" ]
   }
 }

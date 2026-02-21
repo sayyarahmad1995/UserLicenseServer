@@ -275,10 +275,10 @@ public class ThrottlingMiddleware
         {
             StatusCode = 429,
             Message = message,
-            RemainingAttempts = info.RemainingAttempts,
-            NextAttemptInSeconds = info.NextAttemptInSeconds,
+            info.RemainingAttempts,
+            info.NextAttemptInSeconds,
             PenaltyRemainingSeconds = info.InPenalty ? info.PenaltyRemainingSeconds : (int?)null,
-            InPenalty = info.InPenalty
+            info.InPenalty
         };
 
         await context.Response.WriteAsJsonAsync(response);

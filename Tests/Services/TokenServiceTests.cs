@@ -118,8 +118,12 @@ public class TokenServiceTests
 
         // Assert
         refreshToken.Should().NotBeNullOrEmpty();
+        // Session storage + reverse index = 2 SetAsync calls
         _cacheMock.Verify(
-            x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None),
+            x => x.SetAsync(It.Is<string>(k => k.StartsWith("session:")), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None),
+            Times.Once);
+        _cacheMock.Verify(
+            x => x.SetAsync(It.Is<string>(k => k.StartsWith("tokenindex:")), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None),
             Times.Once);
     }
 
@@ -152,6 +156,10 @@ public class TokenServiceTests
             .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None))
             .Returns(Task.CompletedTask);
 
+        _cacheMock
+            .Setup(x => x.RemoveAsync(It.IsAny<string>(), CancellationToken.None))
+            .Returns(Task.CompletedTask);
+
         // Act
         await _tokenService.RevokeSessionAsync(userId, jti);
 
@@ -159,6 +167,10 @@ public class TokenServiceTests
         _cacheMock.Verify(x => x.GetAsync<RefreshToken>(key, CancellationToken.None), Times.Once);
         _cacheMock.Verify(
             x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None),
+            Times.Once);
+        // Verify reverse index cleanup
+        _cacheMock.Verify(
+            x => x.RemoveAsync(It.Is<string>(k => k.StartsWith("tokenindex:")), CancellationToken.None),
             Times.Once);
     }
 

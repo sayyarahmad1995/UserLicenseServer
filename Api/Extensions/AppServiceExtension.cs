@@ -139,6 +139,21 @@ public static class AppServiceExtension
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserLicenseServer", Version = "v1" });
         });
 
+        // CORS: allow configurable origins (default: localhost dev ports)
+        var allowedOrigins = config.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy("DefaultPolicy", policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials(); // required for cookie-based auth
+            });
+        });
+
         return services;
     }
 }

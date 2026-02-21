@@ -59,11 +59,9 @@ public class AuthService : IAuthService
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti);
 
-            // Parallel: set cookies + update last login
-            var cookieTask = _authHelper.SetAuthCookiesAsync(response, accessToken, refreshToken, _config);
+            _authHelper.SetAuthCookies(response, accessToken, refreshToken, _config);
             user.LastLogin = DateTime.UtcNow;
-            var dbTask = _unitOfWork.CompleteAsync();
-            await Task.WhenAll(cookieTask, dbTask);
+            await _unitOfWork.CompleteAsync();
 
             var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
 

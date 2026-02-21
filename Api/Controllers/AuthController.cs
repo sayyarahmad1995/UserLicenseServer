@@ -103,11 +103,6 @@ public class AuthController : BaseApiController
             _logger.LogError(ex, "Token error during login");
             return ApiResult.Fail(500, "Authentication service error");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during login");
-            return ApiResult.Fail(500, "Internal server error");
-        }
     }
 
     /// <summary>
@@ -233,8 +228,7 @@ public class AuthController : BaseApiController
         if (cached != null)
         {
             _logger.LogDebug("User {UserId} profile retrieved from cache", parsedUserId);
-            var cachedUserDto = _mapper.Map<UserDto>(cached);
-            return ApiResult.Success(200, "User retrieved successfully.", cachedUserDto);
+            return ApiResult.Success(200, "User retrieved successfully.", cached);
         }
 
         var user = await _unitOfWork.UserRepository.GetByIdAsync(parsedUserId);
@@ -289,7 +283,7 @@ public class AuthController : BaseApiController
             return ApiResult.Fail(500, "Internal server error.");
         }
 
-        await _authHelper.SetAuthCookiesAsync(Response, result.AccessToken, result.RefreshToken, _config);
+        _authHelper.SetAuthCookies(Response, result.AccessToken, result.RefreshToken, _config);
 
         var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
         _logger.LogInformation("Token refresh successful");

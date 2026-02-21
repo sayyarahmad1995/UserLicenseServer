@@ -1,5 +1,4 @@
-using Core.Interfaces;
-using Infrastructure.Data;
+using StackExchange.Redis;
 
 namespace Api.Extensions;
 
@@ -7,29 +6,30 @@ public static class RedisCacheExtensions
 {
     /// <summary>
     /// Subscribes to Redis cache invalidation events and automatically removes the corresponding key.
+    /// Uses IConnectionMultiplexer directly (Singleton) to avoid scoped service lifetime issues.
     /// </summary>
     public static void UseRedisCacheInvalidation(this IApplicationBuilder app)
     {
-        var scope = app.ApplicationServices.CreateScope();
-        var cacheRepo = scope.ServiceProvider.GetRequiredService<ICacheRepository>();
+        var redis = app.ApplicationServices.GetRequiredService<IConnectionMultiplexer>();
+        var logger = app.ApplicationServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("RedisCacheInvalidation");
 
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<RedisCacheRepository>>();
+        var subscriber = redis.GetSubscriber();
+        var database = redis.GetDatabase();
 
-        if (cacheRepo is RedisCacheRepository redisCache)
+        subscriber.Subscribe(RedisChannel.Literal("cache-invalidation"), async (channel, message) =>
         {
-            redisCache.SubscribeToInvalidations(async key =>
+            var key = message.ToString();
+            logger.LogInformation("[Redis] Invalidation received for key: {Key}", key);
+            try
             {
-                logger.LogInformation("[Redis 🔁] Invalidation received for key: {Key}", key);
-                try
-                {
-                    await redisCache.RemoveAsync(key);
-                    logger.LogInformation("[Redis 🔁] Cache removed for key: {Key}", key);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "[Redis ⚠️] Failed to remove cache for key {Key}", key);
-                }
-            });
-        }
+                await database.KeyDeleteAsync(key);
+                logger.LogInformation("[Redis] Cache removed for key: {Key}", key);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[Redis] Failed to remove cache for key {Key}", key);
+            }
+        });
     }
 }

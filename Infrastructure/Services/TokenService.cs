@@ -85,7 +85,12 @@ public class TokenService : ITokenService
         };
 
         var key = $"session:{user.Id}:{jti}";
-        await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+        var ttl = tokenModel.Expires - DateTime.UtcNow;
+        await _cache.SetAsync(key, tokenModel, ttl);
+
+        // Store reverse index: tokenHash → session key for O(1) lookup
+        var indexKey = $"tokenindex:{hashedToken}";
+        await _cache.SetAsync(indexKey, key, ttl);
 
         _logger.LogDebug("Refresh token stored in cache for user {UserId}", user.Id);
         return refreshToken;
@@ -96,24 +101,23 @@ public class TokenService : ITokenService
         _logger.LogInformation("Token refresh requested");
 
         var hashedToken = TokenHasher.HashToken(refreshToken);
-        var keys = await _cache.SearchKeysAsync("session:*");
-        RefreshToken? matchedToken = null;
-        string? matchedKey = null;
 
-        foreach (var key in keys)
+        // O(1) lookup via reverse index instead of scanning all sessions
+        var indexKey = $"tokenindex:{hashedToken}";
+        var matchedKey = await _cache.GetAsync<string>(indexKey);
+
+        if (matchedKey == null)
         {
-            var tokenModel = await _cache.GetAsync<RefreshToken>(key);
-            if (tokenModel != null && tokenModel.TokenHash == hashedToken)
-            {
-                matchedToken = tokenModel;
-                matchedKey = key;
-                break;
-            }
+            _logger.LogWarning("Refresh token not found in cache");
+            throw new TokenException("Refresh token not found.");
         }
+
+        var matchedToken = await _cache.GetAsync<RefreshToken>(matchedKey);
 
         if (matchedToken == null)
         {
-            _logger.LogWarning("Refresh token not found in cache");
+            _logger.LogWarning("Session key found in index but session data missing");
+            await _cache.RemoveAsync(indexKey);
             throw new TokenException("Refresh token not found.");
         }
 
@@ -139,8 +143,10 @@ public class TokenService : ITokenService
         var newAccessToken = GenerateAccessToken(user);
         var newRefreshToken = await GenerateRefreshTokenAsync(user, matchedToken.Jti);
 
+        // Revoke old token and clean up its reverse index
         matchedToken.Revoked = true;
         await _cache.SetAsync(matchedKey!, matchedToken, matchedToken.Expires - DateTime.UtcNow);
+        await _cache.RemoveAsync(indexKey);
 
         _logger.LogInformation("Token refresh successful for user {UserId}", user.Id);
 
@@ -163,6 +169,10 @@ public class TokenService : ITokenService
         tokenModel.Revoked = true;
         await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
 
+        // Clean up reverse index
+        if (!string.IsNullOrEmpty(tokenModel.TokenHash))
+            await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}");
+
         _logger.LogInformation("Session revoked successfully for user {UserId} with JTI {Jti}", userId, jti);
     }
 
@@ -180,6 +190,11 @@ public class TokenService : ITokenService
             {
                 tokenModel.Revoked = true;
                 await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+
+                // Clean up reverse index
+                if (!string.IsNullOrEmpty(tokenModel.TokenHash))
+                    await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}");
+
                 revokedCount++;
             }
         }
@@ -196,19 +211,25 @@ public class TokenService : ITokenService
         }
 
         var hashedToken = TokenHasher.HashToken(refreshToken);
-        var keys = await _cache.SearchKeysAsync("session:*");
 
-        foreach (var key in keys)
+        // O(1) lookup via reverse index
+        var indexKey = $"tokenindex:{hashedToken}";
+        var sessionKey = await _cache.GetAsync<string>(indexKey);
+
+        if (sessionKey == null)
         {
-            var tokenModel = await _cache.GetAsync<RefreshToken>(key);
-            if (tokenModel != null && tokenModel.TokenHash == hashedToken && !tokenModel.Revoked && tokenModel.Expires >= DateTime.UtcNow)
-            {
-                _logger.LogDebug("Token validation successful for user {UserId}", tokenModel.UserId);
-                return true;
-            }
+            _logger.LogDebug("Token validation failed - no reverse index found");
+            return false;
         }
 
-        _logger.LogDebug("Token validation failed - no valid token found");
+        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey);
+        if (tokenModel != null && tokenModel.TokenHash == hashedToken && !tokenModel.Revoked && tokenModel.Expires >= DateTime.UtcNow)
+        {
+            _logger.LogDebug("Token validation successful for user {UserId}", tokenModel.UserId);
+            return true;
+        }
+
+        _logger.LogDebug("Token validation failed - token revoked or expired");
         return false;
     }
 
@@ -217,18 +238,20 @@ public class TokenService : ITokenService
         if (string.IsNullOrEmpty(refreshToken)) return;
 
         var hashedToken = TokenHasher.HashToken(refreshToken);
-        var keys = await _cache.SearchKeysAsync("session:*");
 
-        foreach (var key in keys)
+        // O(1) lookup via reverse index
+        var indexKey = $"tokenindex:{hashedToken}";
+        var sessionKey = await _cache.GetAsync<string>(indexKey);
+
+        if (sessionKey == null) return;
+
+        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey);
+        if (tokenModel != null && !tokenModel.Revoked)
         {
-            var tokenModel = await _cache.GetAsync<RefreshToken>(key);
-            if (tokenModel != null && tokenModel.TokenHash == hashedToken && !tokenModel.Revoked)
-            {
-                tokenModel.Revoked = true;
-                await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
-                _logger.LogInformation("Revoked session {Key} by refresh token", key);
-                return;
-            }
+            tokenModel.Revoked = true;
+            await _cache.SetAsync(sessionKey, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+            await _cache.RemoveAsync(indexKey);
+            _logger.LogInformation("Revoked session {Key} by refresh token", sessionKey);
         }
     }
 }

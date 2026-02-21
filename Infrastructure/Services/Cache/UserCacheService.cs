@@ -21,7 +21,7 @@ public class UserCacheService : IUserCacheService
         _cacheRepo = cacheRepo;
         _versionService = versionService;
         _slidingExpiration = TimeSpan.FromMinutes(
-            cacheSettings.Value.UserSlidingExpirationMinutes
+            cacheSettings.Value.UserExpirationMinutes
         );
         _usersListExpiration = TimeSpan.FromMinutes(
             cacheSettings.Value.UsersListExpirationMinutes

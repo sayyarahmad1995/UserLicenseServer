@@ -22,14 +22,14 @@ public sealed class UnitOfWork : IUnitOfWork
     {
         var type = typeof(TEntity);
 
-        if (!_repositories.ContainsKey(type))
-        {
-            var repoType = typeof(GenericRepository<>).MakeGenericType(type);
-            var repoInstance = Activator.CreateInstance(repoType, _context)!;
-            _repositories[type] = repoInstance;
-        }
+        if (_repositories.TryGetValue(type, out var existing))
+            return (IGenericRepository<TEntity>)existing;
 
-        return (IGenericRepository<TEntity>)_repositories[type];
+        var repoType = typeof(GenericRepository<>).MakeGenericType(type);
+        var repoInstance = Activator.CreateInstance(repoType, _context)!;
+        _repositories[type] = repoInstance;
+
+        return (IGenericRepository<TEntity>)repoInstance;
     }
 
     public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();

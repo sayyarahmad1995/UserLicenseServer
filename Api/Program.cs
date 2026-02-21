@@ -8,10 +8,14 @@ builder.Services.AddAppServices(builder.Configuration);
 
 var app = builder.Build();
 
+// 1. Security headers on every response
 app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseMiddleware<HttpLoggingMiddleware>();
+
+// 2. Exception handler must wrap everything below it
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseMiddleware<ThrottlingMiddleware>();
+
+// 3. Request/response logging (exceptions from here are caught above)
+app.UseMiddleware<HttpLoggingMiddleware>();
 
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 
@@ -31,12 +35,15 @@ if (!app.Environment.IsEnvironment("Testing"))
     await DbInitializer.InitializeAsync(app.Services);
 }
 
-app.MapSwagger().RequireAuthorization();
-
-app.UseRouting();
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("DefaultPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// 4. Throttling runs after auth so context.User is populated for user-tier throttling
+app.UseMiddleware<ThrottlingMiddleware>();
+
 app.MapControllers();
 
 app.Run();

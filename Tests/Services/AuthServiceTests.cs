@@ -94,8 +94,7 @@ public class AuthServiceTests
         _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
             .Returns("15");
 
-        _authHelperMock.Setup(x => x.SetAuthCookiesAsync(responseMock.Object, validTokenString, "refresh_token", _configMock.Object))
-            .Returns(Task.CompletedTask);
+        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token", _configMock.Object));
 
         // Act
         var result = await _authService.LoginAsync(loginDto, responseMock.Object);
@@ -221,8 +220,7 @@ public class AuthServiceTests
         _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
             .Returns("15");
 
-        _authHelperMock.Setup(x => x.SetAuthCookiesAsync(responseMock.Object, validTokenString, "refresh_token", _configMock.Object))
-            .Returns(Task.CompletedTask);
+        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token", _configMock.Object));
 
         // Act
         var result = await _authService.LoginAsync(loginDto, responseMock.Object);

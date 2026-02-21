@@ -26,6 +26,8 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+#if DEBUG
+    // These tests hit TestController endpoints which are compiled only in Debug builds.
     [Fact]
     public async Task TestEndpoint_ShouldReturnSuccess()
     {
@@ -67,4 +69,5 @@ public class UsersControllerIntegrationTests : IntegrationTestBase
 
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
+#endif
 }

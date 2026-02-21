@@ -11,4 +11,9 @@ public class UserDto
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLogin { get; set; }
     public string? Status { get; set; }
+
+    // Notification preferences
+    public bool NotifyLicenseExpiry { get; set; }
+    public bool NotifyAccountActivity { get; set; }
+    public bool NotifySystemAnnouncements { get; set; }
 }

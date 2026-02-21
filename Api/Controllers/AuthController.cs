@@ -446,6 +446,71 @@ public class AuthController : BaseApiController
     }
 
     /// <summary>
+    /// Gets the authenticated user's notification preferences.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Current notification preferences</returns>
+    /// <response code="200">Preferences retrieved</response>
+    /// <response code="401">User not authenticated</response>
+    [Authorize]
+    [HttpGet("notifications")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetNotificationPreferences(CancellationToken ct)
+    {
+        if (!TryGetUserId(out var parsedUserId))
+            return ApiResult.Fail(401, "Unauthorized.");
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(parsedUserId, ct);
+        if (user == null)
+            return ApiResult.Fail(404, "User not found.");
+
+        var prefs = new NotificationPreferencesDto
+        {
+            NotifyLicenseExpiry = user.NotifyLicenseExpiry,
+            NotifyAccountActivity = user.NotifyAccountActivity,
+            NotifySystemAnnouncements = user.NotifySystemAnnouncements
+        };
+
+        return ApiResult.Success(200, "Notification preferences retrieved.", prefs);
+    }
+
+    /// <summary>
+    /// Updates the authenticated user's notification preferences.
+    /// </summary>
+    /// <param name="dto">Notification preference settings</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Updated notification preferences</returns>
+    /// <response code="200">Preferences updated</response>
+    /// <response code="401">User not authenticated</response>
+    [Authorize]
+    [HttpPut("notifications")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateNotificationPreferences(
+        [FromBody] NotificationPreferencesDto dto, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var parsedUserId))
+            return ApiResult.Fail(401, "Unauthorized.");
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(parsedUserId, ct);
+        if (user == null)
+            return ApiResult.Fail(404, "User not found.");
+
+        user.NotifyLicenseExpiry = dto.NotifyLicenseExpiry;
+        user.NotifyAccountActivity = dto.NotifyAccountActivity;
+        user.NotifySystemAnnouncements = dto.NotifySystemAnnouncements;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _unitOfWork.UserRepository.Update(user);
+        await _unitOfWork.CompleteAsync(ct);
+
+        await _userCache.InvalidateUserAsync(parsedUserId);
+
+        return ApiResult.Success(200, "Notification preferences updated.", dto);
+    }
+
+    /// <summary>
     /// Verifies a user's email using the token sent to their email address.
     /// </summary>
     /// <param name="dto">Verification token</param>

@@ -15,6 +15,11 @@ public class User : BaseEntity
     public DateTime? BlockedAt { get; set; }
     public UserStatus Status { get; set; } = UserStatus.Unverified;
 
+    // ── Notification preferences ──
+    public bool NotifyLicenseExpiry { get; set; } = true;
+    public bool NotifyAccountActivity { get; set; } = true;
+    public bool NotifySystemAnnouncements { get; set; } = true;
+
     public ICollection<License> Licenses { get; set; } = new List<License>();
 
     public void Verify()

@@ -486,7 +486,7 @@ public class TokenServiceTests
             });
 
         var userRepoMock = new Mock<IUserRepository>();
-        userRepoMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync((User?)null);
+        userRepoMock.Setup(x => x.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         _unitOfWorkMock.Setup(x => x.UserRepository).Returns(userRepoMock.Object);
 
         // Act & Assert
@@ -527,7 +527,7 @@ public class TokenServiceTests
         };
 
         var userRepoMock = new Mock<IUserRepository>();
-        userRepoMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(user);
+        userRepoMock.Setup(x => x.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _unitOfWorkMock.Setup(x => x.UserRepository).Returns(userRepoMock.Object);
 
         _cacheMock

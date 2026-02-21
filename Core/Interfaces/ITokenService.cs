@@ -6,10 +6,10 @@ namespace Core.Interfaces;
 public interface ITokenService
 {
     string GenerateAccessToken(User user);
-    Task<string> GenerateRefreshTokenAsync(User user, string jti);
-    Task<TokenResponseDto> RefreshTokenAsync(string refreshToken);
-    Task RevokeSessionAsync(int userId, string jti);
-    Task RevokeAllSessionsAsync(int userId);
-    Task RevokeByRefreshTokenAsync(string refreshToken);
-    public Task<bool> ValidateRefreshTokenAsync(string refreshToken);
+    Task<string> GenerateRefreshTokenAsync(User user, string jti, CancellationToken ct = default);
+    Task<TokenResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    Task RevokeSessionAsync(int userId, string jti, CancellationToken ct = default);
+    Task RevokeAllSessionsAsync(int userId, CancellationToken ct = default);
+    Task RevokeByRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    public Task<bool> ValidateRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
 }

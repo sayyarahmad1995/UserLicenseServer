@@ -32,12 +32,12 @@ public class UsersController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams p)
+    public async Task<ActionResult<Pagination<UserDto>>> GetUsers([FromQuery] UserSpecParams p, CancellationToken ct)
     {
         _logger.LogInformation("GetUsers called - PageIndex: {PageIndex}, PageSize: {PageSize}, Search: {Search}", 
             p.PageIndex, p.PageSize, p.Search);
 
-        var cached = await _userCache.GetUsersAsync(p);
+        var cached = await _userCache.GetUsersAsync(p, ct);
         if (cached != null)
         {
             _logger.LogDebug("Users list retrieved from cache");
@@ -47,8 +47,8 @@ public class UsersController : BaseApiController
         var spec = new UserSpecification(p);
         var countSpec = new UserCountSpecification(p);
 
-        var total = await _unitOfWork.UserRepository.CountAsync(countSpec);
-        var users = await _unitOfWork.UserRepository.ListAsync(spec);
+        var total = await _unitOfWork.UserRepository.CountAsync(countSpec, ct);
+        var users = await _unitOfWork.UserRepository.ListAsync(spec, ct);
 
         var dto = _mapper.Map<IReadOnlyList<UserDto>>(users);
 
@@ -60,25 +60,25 @@ public class UsersController : BaseApiController
             Data = dto
         };
 
-        await _userCache.CacheUsersAsync(p, result);
+        await _userCache.CacheUsersAsync(p, result, ct);
         _logger.LogDebug("Users list cached - Total count: {TotalCount}", total);
 
         return Ok(result);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<UserDto>> GetUserById(int id)
+    public async Task<ActionResult<UserDto>> GetUserById(int id, CancellationToken ct)
     {
         _logger.LogInformation("GetUserById called for user {UserId}", id);
 
-        var cached = await _userCache.GetUserAsync(id);
+        var cached = await _userCache.GetUserAsync(id, ct);
         if (cached != null)
         {
             _logger.LogDebug("User {UserId} retrieved from cache", id);
             return Ok(cached);
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
         if (user == null)
         {
             _logger.LogWarning("User {UserId} not found", id);
@@ -86,17 +86,17 @@ public class UsersController : BaseApiController
         }
 
         var dto = _mapper.Map<UserDto>(user);
-        await _userCache.CacheUserAsync(id, dto);
+        await _userCache.CacheUserAsync(id, dto, ct);
 
         return ApiResult.Success(200, "User retrieved successfully.", dto);
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteUser(int id)
+    public async Task<IActionResult> DeleteUser(int id, CancellationToken ct)
     {
         _logger.LogInformation("DeleteUser called for user {UserId}", id);
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
         if (user == null)
         {
             _logger.LogWarning("DeleteUser failed - User {UserId} not found", id);
@@ -104,7 +104,7 @@ public class UsersController : BaseApiController
         }
 
         _unitOfWork.UserRepository.Delete(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.CompleteAsync(ct);
 
         // Parallel cache invalidation
         await Task.WhenAll(
@@ -118,7 +118,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPatch("{id:int}")]
-    public async Task<IActionResult> UpdateUserPartial(int id, [FromBody] StatusUpdateDto dto)
+    public async Task<IActionResult> UpdateUserPartial(int id, [FromBody] StatusUpdateDto dto, CancellationToken ct)
     {
         _logger.LogInformation("UpdateUserPartial called for user {UserId} with status {Status}", id, dto.Status);
 
@@ -128,7 +128,7 @@ public class UsersController : BaseApiController
             return ApiResult.Validation(ModelState);
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
         if (user == null)
         {
             _logger.LogWarning("UpdateUserPartial failed - User {UserId} not found", id);
@@ -164,7 +164,7 @@ public class UsersController : BaseApiController
             }
 
             _unitOfWork.UserRepository.Update(user);
-            await _unitOfWork.CompleteAsync();
+            await _unitOfWork.CompleteAsync(ct);
 
             // Parallel cache invalidation
             await Task.WhenAll(
@@ -183,7 +183,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateUserProfile(int id, [FromBody] UpdateUserProfileDto dto)
+    public async Task<IActionResult> UpdateUserProfile(int id, [FromBody] UpdateUserProfileDto dto, CancellationToken ct)
     {
         _logger.LogInformation("UpdateUserProfile called for user {UserId}", id);
 
@@ -193,7 +193,7 @@ public class UsersController : BaseApiController
             return ApiResult.Validation(ModelState);
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(id);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
         if (user == null)
         {
             _logger.LogWarning("UpdateUserProfile failed - User {UserId} not found", id);
@@ -203,7 +203,7 @@ public class UsersController : BaseApiController
         // Check for duplicate username if being updated
         if (!string.IsNullOrWhiteSpace(dto.Username) && dto.Username != user.Username)
         {
-            var existingUser = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
+            var existingUser = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username, ct);
             if (existingUser != null)
             {
                 _logger.LogWarning("UpdateUserProfile failed - Username already taken for user {UserId}", id);
@@ -215,7 +215,7 @@ public class UsersController : BaseApiController
         // Check for duplicate email if being updated
         if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
         {
-            var existingUser = await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email);
+            var existingUser = await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email, ct);
             if (existingUser != null)
             {
                 _logger.LogWarning("UpdateUserProfile failed - Email already in use for user {UserId}", id);
@@ -226,7 +226,7 @@ public class UsersController : BaseApiController
 
         user.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.UserRepository.Update(user);
-        await _unitOfWork.CompleteAsync();
+        await _unitOfWork.CompleteAsync(ct);
 
         // Parallel cache invalidation
         await Task.WhenAll(
@@ -243,7 +243,8 @@ public class UsersController : BaseApiController
     [HttpGet("{id}/licenses")]
     public async Task<ActionResult<Pagination<LicenseDto>>> GetUserLicenses(
        int id,
-       [FromQuery] LicenseSpecParams specParams)
+       [FromQuery] LicenseSpecParams specParams,
+       CancellationToken ct)
     {
         _logger.LogInformation("GetUserLicenses called for user {UserId} - PageIndex: {PageIndex}, PageSize: {PageSize}",
             id, specParams.PageIndex, specParams.PageSize);
@@ -253,8 +254,8 @@ public class UsersController : BaseApiController
         var spec = new LicenseSpecification(specParams);
         var countSpec = new LicenseCountWithFiltersSpecification(specParams);
 
-        var totalItems = await _unitOfWork.LicenseRepository.CountAsync(countSpec);
-        var licenses = await _unitOfWork.LicenseRepository.ListAsync(spec);
+        var totalItems = await _unitOfWork.LicenseRepository.CountAsync(countSpec, ct);
+        var licenses = await _unitOfWork.LicenseRepository.ListAsync(spec, ct);
 
         var data = _mapper.Map<IReadOnlyList<LicenseDto>>(licenses);
 
@@ -271,11 +272,11 @@ public class UsersController : BaseApiController
 
     [Authorize]
     [HttpGet("license/{key}")]
-    public async Task<ActionResult<LicenseDto>> GetLicenseByKey(string key)
+    public async Task<ActionResult<LicenseDto>> GetLicenseByKey(string key, CancellationToken ct)
     {
         _logger.LogInformation("GetLicenseByKey called for license key: {LicenseKey}", key);
 
-        var license = await _unitOfWork.LicenseRepository.GetByIdAsync(key);
+        var license = await _unitOfWork.LicenseRepository.GetByIdAsync(key, ct);
 
         if (license == null)
         {

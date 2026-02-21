@@ -12,9 +12,9 @@ public class HealthController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetHealth()
+    public async Task<IActionResult> GetHealth(CancellationToken ct)
     {
-        var health = await _healthService.GetDatabaseHealthAsync();
+        var health = await _healthService.GetDatabaseHealthAsync(ct);
         return Ok(new
         {
             database = health,

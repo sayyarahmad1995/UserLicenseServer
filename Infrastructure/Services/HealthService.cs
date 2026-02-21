@@ -9,7 +9,7 @@ public class HealthService
     private readonly IConfiguration _config;
     public HealthService(IConfiguration config) => _config = config;
 
-    public async Task<DatabaseHealthInfo> GetDatabaseHealthAsync()
+    public async Task<DatabaseHealthInfo> GetDatabaseHealthAsync(CancellationToken ct = default)
     {
         var info = new DatabaseHealthInfo();
         var connString = _config.GetConnectionString("DefaultConnection");
@@ -17,7 +17,7 @@ public class HealthService
         try
         {
             await using var conn = new NpgsqlConnection(connString);
-            await conn.OpenAsync();
+            await conn.OpenAsync(ct);
 
             info.Status = "Healthy";
 

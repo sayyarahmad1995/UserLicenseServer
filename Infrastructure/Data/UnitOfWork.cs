@@ -32,7 +32,7 @@ public sealed class UnitOfWork : IUnitOfWork
         return (IGenericRepository<TEntity>)repoInstance;
     }
 
-    public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
+    public async Task<int> CompleteAsync(CancellationToken ct = default) => await _context.SaveChangesAsync(ct);
 
     public void Dispose()
     {

@@ -68,7 +68,7 @@ public class TokenService : ITokenService
         return _tokenHandler.WriteToken(token);
     }
 
-    public async Task<string> GenerateRefreshTokenAsync(User user, string jti)
+    public async Task<string> GenerateRefreshTokenAsync(User user, string jti, CancellationToken ct = default)
     {
         _logger.LogDebug("Generating refresh token for user {UserId}", user.Id);
 
@@ -86,17 +86,17 @@ public class TokenService : ITokenService
 
         var key = $"session:{user.Id}:{jti}";
         var ttl = tokenModel.Expires - DateTime.UtcNow;
-        await _cache.SetAsync(key, tokenModel, ttl);
+        await _cache.SetAsync(key, tokenModel, ttl, ct);
 
         // Store reverse index: tokenHash → session key for O(1) lookup
         var indexKey = $"tokenindex:{hashedToken}";
-        await _cache.SetAsync(indexKey, key, ttl);
+        await _cache.SetAsync(indexKey, key, ttl, ct);
 
         _logger.LogDebug("Refresh token stored in cache for user {UserId}", user.Id);
         return refreshToken;
     }
 
-    public async Task<TokenResponseDto> RefreshTokenAsync(string refreshToken)
+    public async Task<TokenResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         _logger.LogInformation("Token refresh requested");
 
@@ -104,7 +104,7 @@ public class TokenService : ITokenService
 
         // O(1) lookup via reverse index instead of scanning all sessions
         var indexKey = $"tokenindex:{hashedToken}";
-        var matchedKey = await _cache.GetAsync<string>(indexKey);
+        var matchedKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (matchedKey == null)
         {
@@ -112,12 +112,12 @@ public class TokenService : ITokenService
             throw new TokenException("Refresh token not found.");
         }
 
-        var matchedToken = await _cache.GetAsync<RefreshToken>(matchedKey);
+        var matchedToken = await _cache.GetAsync<RefreshToken>(matchedKey, ct);
 
         if (matchedToken == null)
         {
             _logger.LogWarning("Session key found in index but session data missing");
-            await _cache.RemoveAsync(indexKey);
+            await _cache.RemoveAsync(indexKey, ct);
             throw new TokenException("Refresh token not found.");
         }
 
@@ -133,7 +133,7 @@ public class TokenService : ITokenService
             throw new TokenException("Refresh token has expired.");
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(int.Parse(matchedToken.UserId));
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(int.Parse(matchedToken.UserId), ct);
         if (user == null)
         {
             _logger.LogError("User {UserId} not found when refreshing token", matchedToken.UserId);
@@ -141,24 +141,24 @@ public class TokenService : ITokenService
         }
 
         var newAccessToken = GenerateAccessToken(user);
-        var newRefreshToken = await GenerateRefreshTokenAsync(user, matchedToken.Jti);
+        var newRefreshToken = await GenerateRefreshTokenAsync(user, matchedToken.Jti, ct);
 
         // Revoke old token and clean up its reverse index
         matchedToken.Revoked = true;
-        await _cache.SetAsync(matchedKey!, matchedToken, matchedToken.Expires - DateTime.UtcNow);
-        await _cache.RemoveAsync(indexKey);
+        await _cache.SetAsync(matchedKey!, matchedToken, matchedToken.Expires - DateTime.UtcNow, ct);
+        await _cache.RemoveAsync(indexKey, ct);
 
         _logger.LogInformation("Token refresh successful for user {UserId}", user.Id);
 
         return new TokenResponseDto { AccessToken = newAccessToken, RefreshToken = newRefreshToken };
     }
 
-    public async Task RevokeSessionAsync(int userId, string jti)
+    public async Task RevokeSessionAsync(int userId, string jti, CancellationToken ct = default)
     {
         _logger.LogInformation("Revoking session for user {UserId} with JTI {Jti}", userId, jti);
 
         var key = $"session:{userId}:{jti}";
-        var tokenModel = await _cache.GetAsync<RefreshToken>(key);
+        var tokenModel = await _cache.GetAsync<RefreshToken>(key, ct);
 
         if (tokenModel == null)
         {
@@ -167,16 +167,16 @@ public class TokenService : ITokenService
         }
 
         tokenModel.Revoked = true;
-        await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+        await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow, ct);
 
         // Clean up reverse index
         if (!string.IsNullOrEmpty(tokenModel.TokenHash))
-            await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}");
+            await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}", ct);
 
         _logger.LogInformation("Session revoked successfully for user {UserId} with JTI {Jti}", userId, jti);
     }
 
-    public async Task RevokeAllSessionsAsync(int userId)
+    public async Task RevokeAllSessionsAsync(int userId, CancellationToken ct = default)
     {
         _logger.LogInformation("Revoking all sessions for user {UserId}", userId);
 
@@ -185,15 +185,16 @@ public class TokenService : ITokenService
 
         foreach (var key in keys)
         {
-            var tokenModel = await _cache.GetAsync<RefreshToken>(key);
+            ct.ThrowIfCancellationRequested();
+            var tokenModel = await _cache.GetAsync<RefreshToken>(key, ct);
             if (tokenModel != null && !tokenModel.Revoked)
             {
                 tokenModel.Revoked = true;
-                await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow);
+                await _cache.SetAsync(key, tokenModel, tokenModel.Expires - DateTime.UtcNow, ct);
 
                 // Clean up reverse index
                 if (!string.IsNullOrEmpty(tokenModel.TokenHash))
-                    await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}");
+                    await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}", ct);
 
                 revokedCount++;
             }
@@ -202,7 +203,7 @@ public class TokenService : ITokenService
         _logger.LogInformation("Revoked {RevokedCount} sessions for user {UserId}", revokedCount, userId);
     }
 
-    public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
+    public async Task<bool> ValidateRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(refreshToken))
         {
@@ -214,7 +215,7 @@ public class TokenService : ITokenService
 
         // O(1) lookup via reverse index
         var indexKey = $"tokenindex:{hashedToken}";
-        var sessionKey = await _cache.GetAsync<string>(indexKey);
+        var sessionKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (sessionKey == null)
         {
@@ -222,7 +223,7 @@ public class TokenService : ITokenService
             return false;
         }
 
-        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey);
+        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey, ct);
         if (tokenModel != null && tokenModel.TokenHash == hashedToken && !tokenModel.Revoked && tokenModel.Expires >= DateTime.UtcNow)
         {
             _logger.LogDebug("Token validation successful for user {UserId}", tokenModel.UserId);
@@ -233,7 +234,7 @@ public class TokenService : ITokenService
         return false;
     }
 
-    public async Task RevokeByRefreshTokenAsync(string refreshToken)
+    public async Task RevokeByRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(refreshToken)) return;
 
@@ -241,16 +242,16 @@ public class TokenService : ITokenService
 
         // O(1) lookup via reverse index
         var indexKey = $"tokenindex:{hashedToken}";
-        var sessionKey = await _cache.GetAsync<string>(indexKey);
+        var sessionKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (sessionKey == null) return;
 
-        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey);
+        var tokenModel = await _cache.GetAsync<RefreshToken>(sessionKey, ct);
         if (tokenModel != null && !tokenModel.Revoked)
         {
             tokenModel.Revoked = true;
-            await _cache.SetAsync(sessionKey, tokenModel, tokenModel.Expires - DateTime.UtcNow);
-            await _cache.RemoveAsync(indexKey);
+            await _cache.SetAsync(sessionKey, tokenModel, tokenModel.Expires - DateTime.UtcNow, ct);
+            await _cache.RemoveAsync(indexKey, ct);
             _logger.LogInformation("Revoked session {Key} by refresh token", sessionKey);
         }
     }

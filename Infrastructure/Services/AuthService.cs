@@ -30,7 +30,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response)
+    public async Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response, CancellationToken ct = default)
     {
         _logger.LogInformation("Login attempt initiated");
 
@@ -40,11 +40,11 @@ public class AuthService : IAuthService
             if (_authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken)
                 && !string.IsNullOrEmpty(existingRefreshToken))
             {
-                await _tokenService.RevokeByRefreshTokenAsync(existingRefreshToken);
+                await _tokenService.RevokeByRefreshTokenAsync(existingRefreshToken, ct);
                 _logger.LogInformation("Revoked existing browser session before new login");
             }
 
-            var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username);
+            var user = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username, ct);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
                 _logger.LogWarning("Login failed - invalid credentials");
@@ -57,11 +57,11 @@ public class AuthService : IAuthService
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
             var jti = jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
 
-            var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti);
+            var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti, ct);
 
             _authHelper.SetAuthCookies(response, accessToken, refreshToken, _config);
             user.LastLogin = DateTime.UtcNow;
-            await _unitOfWork.CompleteAsync();
+            await _unitOfWork.CompleteAsync(ct);
 
             var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
 

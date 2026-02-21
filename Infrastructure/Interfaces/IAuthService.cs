@@ -5,5 +5,5 @@ namespace Infrastructure.Interfaces;
 
 public interface IAuthService
 {
-    Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response);
+    Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response, CancellationToken ct = default);
 }

@@ -11,9 +11,9 @@ public class UserRepository : GenericRepository<User>, IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
-       => await FindByEntityAsync(u => u.Email == email);
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+       => await FindByEntityAsync(u => u.Email == email, ct);
 
-    public async Task<User?> GetByUsernameAsync(string username)
-       => await FindByEntityAsync(u => u.Username == username);
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
+       => await FindByEntityAsync(u => u.Username == username, ct);
 }

@@ -9,9 +9,9 @@ public class LicenseRepository : GenericRepository<License>, ILicenseRepository
     {
     }
 
-    public async Task<License?> GetByIdAsync(string licenseKey)
-        => await FindByEntityAsync(l => l.LicenseKey == licenseKey);
+    public async Task<License?> GetByIdAsync(string licenseKey, CancellationToken ct = default)
+        => await FindByEntityAsync(l => l.LicenseKey == licenseKey, ct);
 
-    public async Task<IReadOnlyList<License>> GetLicensesByUserIdAsync(int userId)
-        => await FindAllByEntityAsync(l => l.UserId == userId);
+    public async Task<IReadOnlyList<License>> GetLicensesByUserIdAsync(int userId, CancellationToken ct = default)
+        => await FindAllByEntityAsync(l => l.UserId == userId, ct);
 }

@@ -70,10 +70,10 @@ public class AuthServiceTests
             .Returns(false);
 
         _tokenServiceMock
-            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>()))
+            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser"))
+        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Create a valid JWT token for testing
@@ -88,7 +88,7 @@ public class AuthServiceTests
         _tokenServiceMock.Setup(x => x.GenerateAccessToken(user))
             .Returns(validTokenString);
 
-        _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>()))
+        _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("refresh_token");
 
         _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
@@ -104,8 +104,8 @@ public class AuthServiceTests
         result.Message.Should().Be("Login successful");
         result.AccessTokenExpires.Should().NotBeNull();
 
-        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("testuser"), Times.Once);
-        _unitOfWorkMock.Verify(x => x.CompleteAsync(), Times.Once);
+        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.CompleteAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -126,10 +126,10 @@ public class AuthServiceTests
             .Returns(false);
 
         _tokenServiceMock
-            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>()))
+            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("nonexistent"))
+        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("nonexistent", It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         // Act & Assert
@@ -137,7 +137,7 @@ public class AuthServiceTests
             await _authService.LoginAsync(loginDto, responseMock.Object)
         );
 
-        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("nonexistent"), Times.Once);
+        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("nonexistent", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -167,10 +167,10 @@ public class AuthServiceTests
             .Returns(false);
 
         _tokenServiceMock
-            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>()))
+            .Setup(x => x.ValidateRefreshTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser"))
+        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Act & Assert
@@ -200,7 +200,7 @@ public class AuthServiceTests
         responseMock.Setup(r => r.HttpContext).Returns(httpContextMock.Object);
         httpContextMock.Setup(c => c.Request).Returns(requestMock.Object);
 
-        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser"))
+        _unitOfWorkMock.Setup(x => x.UserRepository.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var validToken = new JwtSecurityToken(
@@ -214,7 +214,7 @@ public class AuthServiceTests
         _tokenServiceMock.Setup(x => x.GenerateAccessToken(user))
             .Returns(validTokenString);
 
-        _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>()))
+        _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("refresh_token");
 
         _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
@@ -229,7 +229,7 @@ public class AuthServiceTests
         result.Should().NotBeNull();
         result.Message.Should().Be("Login successful");
         result.AccessTokenExpires.Should().NotBeNull();
-        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("testuser"), Times.Once);
+        _unitOfWorkMock.Verify(x => x.UserRepository.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion

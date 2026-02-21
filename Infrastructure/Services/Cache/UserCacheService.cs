@@ -32,18 +32,18 @@ public class UserCacheService : IUserCacheService
         => $"users:v{await _versionService.GetVersionAsync()}:{p.PageIndex}-{p.PageSize}-{p.Sort}-{p.Search}-{p.Status}";
     private static string BuildUserKey(int id)
         => $"user:{id}";
-    public async Task<Pagination<UserDto>?> GetUsersAsync(UserSpecParams specParams)
-        => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams));
-    public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data)
-        => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, _usersListExpiration);
+    public async Task<Pagination<UserDto>?> GetUsersAsync(UserSpecParams specParams, CancellationToken ct = default)
+        => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams), ct);
+    public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data, CancellationToken ct = default)
+        => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, _usersListExpiration, ct);
     public Task InvalidateUserAsync(int id)
     => _cacheRepo.PublishInvalidationAsync(BuildUserKey(id));
     public Task InvalidateUsersAsync()
         => _versionService.IncrementVersionAsync();
-    public async Task<UserDto?> GetUserAsync(int id)
+    public async Task<UserDto?> GetUserAsync(int id, CancellationToken ct = default)
     {
         var key = BuildUserKey(id);
-        var cached = await _cacheRepo.GetAsync<UserDto>(key);
+        var cached = await _cacheRepo.GetAsync<UserDto>(key, ct);
         if (cached != null)
         {
             await _cacheRepo.RefreshAsync(key, _slidingExpiration);
@@ -51,6 +51,6 @@ public class UserCacheService : IUserCacheService
         }
         return null;
     }
-    public Task CacheUserAsync(int id, UserDto user)
-        => _cacheRepo.SetAsync(BuildUserKey(id), user, _slidingExpiration);
+    public Task CacheUserAsync(int id, UserDto user, CancellationToken ct = default)
+        => _cacheRepo.SetAsync(BuildUserKey(id), user, _slidingExpiration, ct);
 }

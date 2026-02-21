@@ -32,15 +32,62 @@ public abstract class IntegrationTestBase : IAsyncLifetime
             {
                 builder.ConfigureAppConfiguration((context, config) =>
                 {
+                    // Provide all required config that may be missing in CI
+                    // (appsettings.Testing.json is gitignored, so CI has no env-specific settings).
+                    // InMemoryCollection is added last, overriding file-based config.
+                    // For connection strings, prefer env vars in CI (set in ci.yml).
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
+                        // JWT
                         { "Jwt:Key", "this_is_a_valid_jwt_key_for_hmacsha512_it_must_be_at_least_64_bytes_long_padded_to_128_bytes_for_safety_to_pass_key_size_checks!!!!" },
                         { "Jwt:Issuer", "https://yourdomain.com" },
                         { "Jwt:Audience", "YourAppAudience" },
+                        { "Jwt:AccessTokenExpiryMinutes", "15" },
+                        { "Jwt:RefreshTokenExpiryDays", "1" },
                         { "Jwt:Roles:0", "Admin" },
                         { "Jwt:Roles:1", "User" },
-                        { "Jwt:Roles:2", "Manager" }
+                        { "Jwt:Roles:2", "Manager" },
+                        // Cache settings
+                        { "CacheSettings:UserExpirationMinutes", "10" },
+                        { "CacheSettings:UsersListExpirationMinutes", "5" },
+                        // Throttling settings
+                        { "ThrottlingSettings:Global:ThrottleThreshold", "30" },
+                        { "ThrottlingSettings:Global:MaxRequestsPerMinute", "60" },
+                        { "ThrottlingSettings:Global:WindowSeconds", "60" },
+                        { "ThrottlingSettings:Global:MaxDelayMs", "5000" },
+                        { "ThrottlingSettings:Global:PenaltySeconds", "600" },
+                        { "ThrottlingSettings:Auth:ThrottleThreshold", "3" },
+                        { "ThrottlingSettings:Auth:MaxRequestsPerMinute", "5" },
+                        { "ThrottlingSettings:Auth:WindowSeconds", "60" },
+                        { "ThrottlingSettings:Auth:MaxDelayMs", "10000" },
+                        { "ThrottlingSettings:Auth:PenaltySeconds", "300" },
+                        { "ThrottlingSettings:User:ThrottleThreshold", "60" },
+                        { "ThrottlingSettings:User:MaxRequestsPerMinute", "120" },
+                        { "ThrottlingSettings:User:WindowSeconds", "60" },
+                        { "ThrottlingSettings:User:MaxDelayMs", "3000" },
+                        { "ThrottlingSettings:User:PenaltySeconds", "900" },
+                        // Seed data (not used in Testing, but required for binding)
+                        { "SeedData:AdminUser:Username", "admin" },
+                        { "SeedData:AdminUser:Email", "admin@test.com" },
+                        { "SeedData:AdminUser:Password", "Admin@123" },
+                        { "SeedData:AdminUser:Role", "Admin" }
                     });
+
+                    // Provide connection-string fallbacks for CI where appsettings.Testing.json
+                    // is gitignored and missing. Only add if nothing is already configured
+                    // (locally, appsettings.Testing.json provides these with correct auth).
+                    var built = config.Build();
+                    var fallbacks = new Dictionary<string, string?>();
+
+                    if (string.IsNullOrEmpty(built.GetConnectionString("Redis")))
+                        fallbacks["ConnectionStrings:Redis"] = "localhost:6379";
+
+                    if (string.IsNullOrEmpty(built.GetConnectionString("DefaultConnection")))
+                        fallbacks["ConnectionStrings:DefaultConnection"] =
+                            $"Server=localhost;port=5432;Database={DatabaseName};User Id=postgres;Password=Admin@123;TrustServerCertificate=True;";
+
+                    if (fallbacks.Count > 0)
+                        config.AddInMemoryCollection(fallbacks);
                 });
 
                 builder.ConfigureServices(services =>

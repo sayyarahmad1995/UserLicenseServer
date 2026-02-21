@@ -91,7 +91,6 @@ artifacts/
 appsettings.[Dd]evelopment.json
 appsettings.[Tt]esting.json
 *.[Dd]evelopment.json
-*.[Pp]roduction.json
 *.[Tt]esting.json
 
 # Entity Framework Core

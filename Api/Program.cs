@@ -1,12 +1,19 @@
 using Api.Extensions;
 using Api.Middlewares;
 using Infrastructure.Data.Seed;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAppServices(builder.Configuration);
 
 var app = builder.Build();
+
+// Support reverse proxy (nginx, Caddy) — must be first
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // 1. Security headers on every response
 app.UseMiddleware<SecurityHeadersMiddleware>();

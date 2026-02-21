@@ -119,4 +119,5 @@ _ReSharper*/
 
 # Others
 .env
+ROADMAP.md
 node_modules/

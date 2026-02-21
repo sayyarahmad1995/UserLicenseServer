@@ -37,7 +37,13 @@ public class RedisCacheRepository : ICacheRepository
     private string BuildKey(string key) => string.IsNullOrEmpty(_keyPrefix) ? key : $"{_keyPrefix}:{key}";
 
     private CancellationToken GetCancellationToken(CancellationToken token)
-       => token != default ? token : new CancellationTokenSource(_defaultTimeout).Token;
+    {
+        if (token != default) return token;
+        var cts = new CancellationTokenSource(_defaultTimeout);
+        // Note: CTS is intentionally not disposed here; the timer is short-lived
+        // and will be finalized. For high-throughput, consider pooling.
+        return cts.Token;
+    }
 
     #region Core Redis Operations
 

@@ -8,9 +8,9 @@ namespace Infrastructure.Data.Seed;
 
 public static class UserSeeder
 {
-    public static async Task SeedAsync(AppDbContext context, ILogger logger)
+    public static async Task SeedAsync(AppDbContext context, ILogger logger, CancellationToken ct = default)
     {
-        if (await context.Users.CountAsync() > 1)
+        if (await context.Users.CountAsync(ct) > 1)
         {
             logger.LogInformation("⚠️ Users already seeded (excluding admin). Skipping user seeding.");
             return;
@@ -30,7 +30,7 @@ public static class UserSeeder
         };
         jsonOpt.Converters.Add(new JsonStringEnumConverter());
 
-        var usersJson = await File.ReadAllTextAsync(usersFile);
+        var usersJson = await File.ReadAllTextAsync(usersFile, ct);
         var users = JsonSerializer.Deserialize<List<User>>(usersJson, jsonOpt) ?? new();
 
         foreach (User user in users)
@@ -45,7 +45,7 @@ public static class UserSeeder
         }
 
         await context.AddRangeAsync(users);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         logger.LogInformation("✅ Seeded {Count} users", users.Count);
     }
 }

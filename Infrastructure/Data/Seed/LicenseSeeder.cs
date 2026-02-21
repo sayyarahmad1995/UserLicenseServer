@@ -8,9 +8,9 @@ namespace Infrastructure.Data.Seed;
 
 public static class LicenseSeeder
 {
-    public static async Task SeedAsync(AppDbContext context, ILogger logger)
+    public static async Task SeedAsync(AppDbContext context, ILogger logger, CancellationToken ct = default)
     {
-        if (await context.Licenses.AnyAsync())
+        if (await context.Licenses.AnyAsync(ct))
         {
             logger.LogInformation("⚠️ Licenses already exist. Skipping seeding.");
             return;
@@ -36,7 +36,7 @@ public static class LicenseSeeder
         var licenses = JsonSerializer.Deserialize<List<License>>(json, jsonOpt);
         await context.AddRangeAsync(licenses!);
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         logger.LogInformation("✅ Seeded {Count} licenses", licenses!.Count);
     }
 }

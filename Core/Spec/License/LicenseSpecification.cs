@@ -13,16 +13,16 @@ public class LicenseSpecification : BaseSpecification<License>
         {
             switch (specParams.Sort.ToLower())
             {
-                case "createdatasc":
+                case "createdat_asc":
                     AddOrderBy(l => l.CreatedAt);
                     break;
-                case "createdatdesc":
+                case "createdat_desc":
                     AddOrderByDescending(l => l.CreatedAt);
                     break;
-                case "expiryasc":
+                case "expiry_asc":
                     AddOrderBy(l => l.ExpiresAt);
                     break;
-                case "expirydesc":
+                case "expiry_desc":
                     AddOrderByDescending(l => l.ExpiresAt);
                     break;
                 default:

@@ -142,7 +142,7 @@ public class TokenServiceTests
 
         var tokenModel = new RefreshToken
         {
-            UserId = userId.ToString(),
+            UserId = userId,
             TokenHash = "hashed_token",
             CreatedAt = DateTime.UtcNow,
             Expires = DateTime.UtcNow.AddDays(30),
@@ -212,7 +212,7 @@ public class TokenServiceTests
 
         var tokenModel = new RefreshToken
         {
-            UserId = userId.ToString(),
+            UserId = userId,
             TokenHash = "hashed_token",
             CreatedAt = DateTime.UtcNow,
             Expires = DateTime.UtcNow.AddDays(30),
@@ -290,7 +290,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = true,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -319,7 +319,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(-1),
@@ -348,7 +348,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -377,7 +377,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = "different-hash",
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -423,7 +423,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = true,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -451,7 +451,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(-1),
@@ -479,7 +479,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -511,7 +511,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -629,7 +629,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = false,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -666,7 +666,7 @@ public class TokenServiceTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>(sessionKey, CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 TokenHash = hashedToken,
                 Revoked = true,
                 Expires = DateTime.UtcNow.AddDays(30),
@@ -713,9 +713,9 @@ public class TokenServiceTests
 
         // jti1 already revoked, jti2 still active
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>("session:1:jti1", CancellationToken.None))
-            .ReturnsAsync(new RefreshToken { UserId = "1", TokenHash = "h1", Revoked = true, Expires = DateTime.UtcNow.AddDays(30), Jti = "jti1" });
+            .ReturnsAsync(new RefreshToken { UserId = 1, TokenHash = "h1", Revoked = true, Expires = DateTime.UtcNow.AddDays(30), Jti = "jti1" });
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>("session:1:jti2", CancellationToken.None))
-            .ReturnsAsync(new RefreshToken { UserId = "1", TokenHash = "h2", Revoked = false, Expires = DateTime.UtcNow.AddDays(30), Jti = "jti2" });
+            .ReturnsAsync(new RefreshToken { UserId = 1, TokenHash = "h2", Revoked = false, Expires = DateTime.UtcNow.AddDays(30), Jti = "jti2" });
 
         _cacheMock.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>(), CancellationToken.None))
             .Returns(Task.CompletedTask);

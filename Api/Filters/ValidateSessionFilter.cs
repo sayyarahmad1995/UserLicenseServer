@@ -59,7 +59,7 @@ public class ValidateSessionFilter : IAsyncActionFilter
             var authHelper = context.HttpContext.RequestServices.GetRequiredService<IAuthHelper>();
 
             var key = CacheKeys.Session(int.Parse(userId), jti);
-            var session = await cache.GetAsync<RefreshToken>(key);
+            var session = await cache.GetAsync<RefreshToken>(key, context.HttpContext.RequestAborted);
 
             if (session == null || session.Revoked)
             {

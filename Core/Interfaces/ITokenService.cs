@@ -11,5 +11,5 @@ public interface ITokenService
     Task RevokeSessionAsync(int userId, string jti, CancellationToken ct = default);
     Task RevokeAllSessionsAsync(int userId, CancellationToken ct = default);
     Task RevokeByRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
-    public Task<bool> ValidateRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    Task<bool> ValidateRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
 }

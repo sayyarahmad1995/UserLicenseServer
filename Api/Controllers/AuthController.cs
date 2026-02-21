@@ -3,7 +3,6 @@ using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
 using Core.Entities;
-using Core.Enums;
 using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
@@ -189,10 +188,7 @@ public class AuthController : BaseApiController
         }
 
         var user = _mapper.Map<User>(dto);
-
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password!);
-        user.CreatedAt = DateTime.UtcNow;
-        user.Status = UserStatus.Unverified;
 
         _unitOfWork.UserRepository.Add(user);
         await _unitOfWork.CompleteAsync(ct);
@@ -261,7 +257,7 @@ public class AuthController : BaseApiController
     {
         _logger.LogInformation("Token refresh endpoint called");
 
-        if (!_authHelper.TryGetCookie(Request, "refreshToken", out var refreshToken))
+        if (!_authHelper.TryGetCookie(Request, CookieConstants.RefreshToken, out var refreshToken))
         {
             _logger.LogWarning("Token refresh failed - no refresh token in cookie");
             return ApiResult.Fail(401, "Refresh token missing.");

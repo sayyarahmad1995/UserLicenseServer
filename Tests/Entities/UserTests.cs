@@ -53,6 +53,17 @@ public class UserTests
         user.Status.Should().Be(UserStatus.Active);
     }
 
+    [Fact]
+    public void Verify_FromBlocked_ShouldSetVerifiedStatus()
+    {
+        var user = CreateUser(UserStatus.Blocked);
+
+        user.Verify();
+
+        user.Status.Should().Be(UserStatus.Verified);
+        user.VerifiedAt.Should().NotBeNull();
+    }
+
     #endregion
 
     #region Activate

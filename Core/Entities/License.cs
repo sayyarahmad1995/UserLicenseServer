@@ -4,7 +4,7 @@ namespace Core.Entities;
 
 public class License : BaseEntity
 {
-    public string? LicenseKey { get; set; }
+    public string LicenseKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; }
     public DateTime? RevokedAt { get; set; }

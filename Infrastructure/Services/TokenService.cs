@@ -78,7 +78,7 @@ public class TokenService : ITokenService
 
         var tokenModel = new RefreshToken
         {
-            UserId = user.Id.ToString(),
+            UserId = user.Id,
             TokenHash = hashedToken,
             CreatedAt = DateTime.UtcNow,
             Expires = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
@@ -134,9 +134,7 @@ public class TokenService : ITokenService
             throw new TokenException("Refresh token has expired.");
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(
-            int.TryParse(matchedToken.UserId, out var uid) ? uid
-                : throw new TokenException("Invalid user ID in session data."), ct);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(matchedToken.UserId, ct);
         if (user == null)
         {
             _logger.LogError("User {UserId} not found when refreshing token", matchedToken.UserId);

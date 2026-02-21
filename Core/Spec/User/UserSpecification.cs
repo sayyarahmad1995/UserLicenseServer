@@ -13,31 +13,31 @@ public class UserSpecification : BaseSpecification<User>
         {
             switch (specParams.Sort.ToLower())
             {
-                case "usernameasc":
+                case "username_asc":
                     AddOrderBy(u => u.Username);
                     break;
                 case "username_desc":
                     AddOrderByDescending(u => u.Username);
                     break;
-                case "email":
+                case "email_asc":
                     AddOrderBy(u => u.Email);
                     break;
                 case "email_desc":
                     AddOrderByDescending(u => u.Email);
                     break;
-                case "createdatasc":
+                case "createdat_asc":
                     AddOrderBy(u => u.CreatedAt);
                     break;
-                case "createdatdesc":
+                case "createdat_desc":
                     AddOrderByDescending(u => u.CreatedAt);
                     break;
-                case "verifiedatasc":
+                case "verifiedat_asc":
                     AddOrderBy(u => u.VerifiedAt!);
                     break;
-                case "verifiedatdesc":
+                case "verifiedat_desc":
                     AddOrderByDescending(u => u.VerifiedAt!);
                     break;
-                case "roleasc":
+                case "role_asc":
                     AddOrderBy(u => u.Role);
                     break;
                 case "role_desc":

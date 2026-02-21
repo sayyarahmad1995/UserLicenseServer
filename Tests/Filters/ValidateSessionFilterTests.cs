@@ -200,7 +200,7 @@ public class ValidateSessionFilterTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>("session:1:valid-jti", CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 Jti = "valid-jti",
                 TokenHash = "hash",
                 Revoked = false,
@@ -235,7 +235,7 @@ public class ValidateSessionFilterTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>("session:1:revoked-jti", CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 Jti = "revoked-jti",
                 TokenHash = "hash",
                 Revoked = true,
@@ -302,7 +302,7 @@ public class ValidateSessionFilterTests
         _cacheMock.Setup(x => x.GetAsync<RefreshToken>("session:1:revoked-jti", CancellationToken.None))
             .ReturnsAsync(new RefreshToken
             {
-                UserId = "1",
+                UserId = 1,
                 Jti = "revoked-jti",
                 TokenHash = "hash",
                 Revoked = true,

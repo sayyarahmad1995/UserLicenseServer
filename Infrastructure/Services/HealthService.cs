@@ -69,7 +69,8 @@ public class HealthService
         catch (Exception ex)
         {
             info.Status = "Unreachable";
-            info.Size = ex.Message; // optional: include minimal context during debug
+            info.Size = "Error retrieving database size";
+            _ = ex; // logged elsewhere if needed
         }
 
         return info;

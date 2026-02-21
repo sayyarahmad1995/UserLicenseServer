@@ -9,11 +9,11 @@ namespace Infrastructure.Data.Seed;
 
 public static class AdminSeeder
 {
-    public static async Task SeedAsync(AppDbContext context, IServiceProvider serviceProvider, ILogger logger)
+    public static async Task SeedAsync(AppDbContext context, IServiceProvider serviceProvider, ILogger logger, CancellationToken ct = default)
     {
         var adminOptions = serviceProvider.GetRequiredService<IOptions<AdminUserSeedOptions>>().Value;
 
-        if (await context.Users.AnyAsync(u => u.Email == adminOptions.Email))
+        if (await context.Users.AnyAsync(u => u.Email == adminOptions.Email, ct))
         {
             logger.LogInformation("⚠️ Admin user already exists. Skipping seeding.");
             return;
@@ -29,8 +29,8 @@ public static class AdminSeeder
             VerifiedAt = DateTime.UtcNow
         };
 
-        await context.Users.AddAsync(adminUser);
-        await context.SaveChangesAsync();
+        await context.Users.AddAsync(adminUser, ct);
+        await context.SaveChangesAsync(ct);
 
         logger.LogInformation("✅ Admin user created: {Email}", adminOptions.Email);
     }

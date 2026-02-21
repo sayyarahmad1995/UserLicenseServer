@@ -33,12 +33,10 @@ public class AuthService : IAuthService
 
     public async Task<LoginResultDto> LoginAsync(LoginDto dto, HttpResponse response, CancellationToken ct = default)
     {
-        _logger.LogInformation("Login attempt initiated");
-
         try
         {
             // If this browser already has a session, revoke it to prevent duplicate sessions
-            if (_authHelper.TryGetCookie(response.HttpContext.Request, "refreshToken", out var existingRefreshToken)
+            if (_authHelper.TryGetCookie(response.HttpContext.Request, CookieConstants.RefreshToken, out var existingRefreshToken)
                 && !string.IsNullOrEmpty(existingRefreshToken))
             {
                 await _tokenService.RevokeByRefreshTokenAsync(existingRefreshToken, ct);

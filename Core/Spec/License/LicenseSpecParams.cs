@@ -26,6 +26,6 @@ public class LicenseSpecParams
     public string? Search
     {
         get => _search;
-        set => _search = value;
+        set => _search = value?.ToLower();
     }
 }

@@ -123,9 +123,9 @@ public static class AppServiceExtension
                 OnMessageReceived = context =>
               {
                   if (string.IsNullOrEmpty(context.Token) &&
-                   context.Request.Cookies.ContainsKey("accessToken"))
+                   context.Request.Cookies.ContainsKey(CookieConstants.AccessToken))
                   {
-                      context.Token = context.Request.Cookies["accessToken"];
+                      context.Token = context.Request.Cookies[CookieConstants.AccessToken];
                   }
                   return Task.CompletedTask;
               }

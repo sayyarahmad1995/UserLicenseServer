@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Api.Errors;
 
+/// <summary>
+/// Standard API response envelope wrapping status code, message, and optional data.
+/// </summary>
 public class ApiResponse
 {
     public bool Success { get; set; }

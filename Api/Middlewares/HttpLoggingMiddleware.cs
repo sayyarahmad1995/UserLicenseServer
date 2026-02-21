@@ -45,7 +45,8 @@ public class HttpLoggingMiddleware
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 memoryStream.Seek(0, SeekOrigin.Begin);
-                var responseBody = await new StreamReader(memoryStream).ReadToEndAsync();
+                using var reader = new StreamReader(memoryStream, leaveOpen: true);
+                var responseBody = await reader.ReadToEndAsync();
                 _logger.LogDebug("[{RequestId}] Response Body: {Body}", requestId, responseBody);
             }
 

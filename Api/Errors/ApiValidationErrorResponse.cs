@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Api.Errors;
 
+/// <summary>
+/// API response containing model validation errors keyed by field name.
+/// </summary>
 public class ApiValidationErrorResponse : ApiResponse
 {
     public ApiValidationErrorResponse() : base(400) { }

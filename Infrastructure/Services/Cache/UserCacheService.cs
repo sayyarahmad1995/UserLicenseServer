@@ -36,9 +36,9 @@ public class UserCacheService : IUserCacheService
         => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams), ct);
     public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data, CancellationToken ct = default)
         => await _cacheRepo.SetAsync(await BuildListKey(specParams), data, _usersListExpiration, ct);
-    public Task InvalidateUserAsync(int id)
+    public Task InvalidateUserAsync(int id, CancellationToken ct = default)
     => _cacheRepo.PublishInvalidationAsync(BuildUserKey(id));
-    public Task InvalidateUsersAsync()
+    public Task InvalidateUsersAsync(CancellationToken ct = default)
         => _versionService.IncrementVersionAsync();
     public async Task<UserDto?> GetUserAsync(int id, CancellationToken ct = default)
     {

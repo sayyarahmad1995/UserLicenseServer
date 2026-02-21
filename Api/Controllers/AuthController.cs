@@ -73,6 +73,7 @@ public class AuthController : BaseApiController
     /// Authenticates a user and returns JWT access token and refresh token.
     /// </summary>
     /// <param name="dto">Login credentials (username and password)</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Access token expiry time on successful login</returns>
     /// <response code="200">Login successful - tokens set in HTTP-only cookies</response>
     /// <response code="401">Invalid credentials</response>
@@ -168,6 +169,7 @@ public class AuthController : BaseApiController
     /// Password must contain: uppercase, lowercase, numbers, and special characters.
     /// </summary>
     /// <param name="dto">Registration details (username, email, password)</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Success message on account creation</returns>
     /// <response code="200">User registered successfully</response>
     /// <response code="400">Validation error (duplicate email/username or weak password)</response>

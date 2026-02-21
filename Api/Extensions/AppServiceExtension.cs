@@ -159,7 +159,32 @@ public static class AppServiceExtension
 
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserLicenseServer", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "EazeCad License Server API",
+                Version = "v1",
+                Description = "REST API for user management, authentication, and software license management.",
+                Contact = new OpenApiContact
+                {
+                    Name = "EazeCad",
+                    Email = "noreply@eazecad.com"
+                }
+            });
+
+            // Include XML comments from controllers and DTOs
+            var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            if (File.Exists(xmlPath))
+                c.IncludeXmlComments(xmlPath);
+
+            // Cookie-based auth description
+            c.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Cookie,
+                Name = "access_token",
+                Description = "JWT access token stored in HTTP-only cookie. Login via POST /api/v1/auth/login to obtain."
+            });
         });
 
         // CORS: allow configurable origins (default: localhost dev ports)

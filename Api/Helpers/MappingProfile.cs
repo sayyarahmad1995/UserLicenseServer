@@ -11,7 +11,13 @@ public class MappingProfile : Profile
     {
         CreateMap<User, UserDto>();
 
-        CreateMap<License, LicenseDto>();
+        CreateMap<License, LicenseDto>()
+            .ForMember(dest => dest.ActiveActivations,
+                opt => opt.MapFrom(src => src.Activations.Count(a => a.DeactivatedAt == null)));
+
+        CreateMap<LicenseActivation, LicenseActivationDto>()
+            .ForMember(dest => dest.IsActive,
+                opt => opt.MapFrom(src => src.DeactivatedAt == null));
 
         CreateMap<RegisterDto, User>()
            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())

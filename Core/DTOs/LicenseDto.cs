@@ -10,4 +10,6 @@ public class LicenseDto
     public DateTime ExpiresAt { get; set; }
     public DateTime? RevokedAt { get; set; }
     public LicenseStatus Status { get; set; }
+    public int MaxActivations { get; set; }
+    public int ActiveActivations { get; set; }
 }

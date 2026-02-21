@@ -313,4 +313,115 @@ public class LicensesController : BaseApiController
             FailedCount = failed.Count
         });
     }
+
+    // ── Client-facing activation / usage endpoints ──
+
+    /// <summary>
+    /// Activates a license on a machine. Called by client applications.
+    /// </summary>
+    /// <param name="dto">License key and machine fingerprint</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Activation details</returns>
+    /// <response code="200">License activated successfully</response>
+    /// <response code="400">Invalid license or max activations reached</response>
+    [AllowAnonymous]
+    [HttpPost("activate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ActivateLicense([FromBody] ActivateLicenseDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var ipAddress = GetIpAddress();
+            var activation = await _licenseService.ActivateLicenseAsync(
+                dto.LicenseKey, dto.MachineFingerprint, dto.Hostname, ipAddress, ct);
+
+            var data = _mapper.Map<LicenseActivationDto>(activation);
+            return ApiResult.Success(200, "License activated successfully.", data);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApiResult.Fail(400, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates whether a license is active and activated on the requesting machine.
+    /// </summary>
+    /// <param name="dto">License key and machine fingerprint</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Validation result</returns>
+    [AllowAnonymous]
+    [HttpPost("validate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ValidateLicense([FromBody] LicenseValidationDto dto, CancellationToken ct)
+    {
+        var result = await _licenseService.ValidateLicenseAsync(dto.LicenseKey, dto.MachineFingerprint, ct);
+        var statusCode = result.Valid ? 200 : 403;
+        var message = result.Valid ? "License is valid." : result.Reason ?? "License validation failed.";
+        return ApiResult.Success(statusCode, message, result);
+    }
+
+    /// <summary>
+    /// Updates the last-seen timestamp for an active license on a machine.
+    /// Client apps should call this periodically (e.g., every 5 minutes).
+    /// </summary>
+    /// <param name="dto">License key and machine fingerprint</param>
+    /// <param name="ct">Cancellation token</param>
+    [AllowAnonymous]
+    [HttpPost("heartbeat")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Heartbeat([FromBody] LicenseValidationDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _licenseService.HeartbeatAsync(dto.LicenseKey, dto.MachineFingerprint, ct);
+            return ApiResult.Success(200, "Heartbeat recorded.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApiResult.Fail(400, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Deactivates a license on a specific machine (frees up an activation slot).
+    /// </summary>
+    /// <param name="dto">License key and machine fingerprint</param>
+    /// <param name="ct">Cancellation token</param>
+    [AllowAnonymous]
+    [HttpPost("deactivate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeactivateLicense([FromBody] LicenseValidationDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _licenseService.DeactivateLicenseAsync(dto.LicenseKey, dto.MachineFingerprint, ct);
+            return ApiResult.Success(200, "License deactivated on this machine.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApiResult.Fail(400, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Returns the activation history for a specific license (admin only).
+    /// </summary>
+    /// <param name="id">License ID</param>
+    /// <param name="ct">Cancellation token</param>
+    [HttpGet("{id:int}/activations")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetActivations(int id, CancellationToken ct)
+    {
+        var license = await _unitOfWork.LicenseRepository.GetByIdAsync(id, ct);
+        if (license == null) return ApiResult.Fail(404, "License not found.");
+
+        var activations = await _licenseService.GetActivationsAsync(id, ct);
+        var data = _mapper.Map<IReadOnlyList<LicenseActivationDto>>(activations);
+        return ApiResult.Success(200, "Activation history retrieved.", data);
+    }
 }

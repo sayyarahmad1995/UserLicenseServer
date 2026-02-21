@@ -3,7 +3,9 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -16,6 +18,7 @@ public class LicenseServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<ILicenseRepository> _licenseRepositoryMock;
     private readonly Mock<ILogger<LicenseService>> _loggerMock;
+    private readonly AppDbContext _context;
     private readonly LicenseService _licenseService;
 
     public LicenseServiceTests()
@@ -28,7 +31,13 @@ public class LicenseServiceTests
         _unitOfWorkMock.Setup(x => x.UserRepository).Returns(_userRepositoryMock.Object);
         _unitOfWorkMock.Setup(x => x.LicenseRepository).Returns(_licenseRepositoryMock.Object);
 
-        _licenseService = new LicenseService(_unitOfWorkMock.Object, _loggerMock.Object);
+        // In-memory DB for activation tests
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: $"LicenseServiceTests_{Guid.NewGuid()}")
+            .Options;
+        _context = new AppDbContext(options);
+
+        _licenseService = new LicenseService(_unitOfWorkMock.Object, _context, _loggerMock.Object);
     }
 
     #region CreateLicenseAsync Tests

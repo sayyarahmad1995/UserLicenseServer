@@ -14,6 +14,7 @@ public class LicenseConfig : IEntityTypeConfiguration<License>
         builder.Property(l => l.CreatedAt).IsRequired();
         builder.Property(l => l.ExpiresAt).IsRequired();
         builder.Property(l => l.Status).HasConversion<string>().IsRequired();
+        builder.Property(l => l.MaxActivations).HasDefaultValue(1);
 
         builder.HasIndex(l => new { l.UserId, l.Status, l.ExpiresAt });
 

@@ -36,7 +36,9 @@ public class MappingProfileTests
     public void AutoMapperConfiguration_LicenseToLicenseDto_IsValid()
     {
         var expr = new MapperConfigurationExpression();
-        expr.CreateMap<License, LicenseDto>();
+        expr.CreateMap<License, LicenseDto>()
+            .ForMember(dest => dest.ActiveActivations,
+                opt => opt.MapFrom(src => src.Activations.Count(a => a.DeactivatedAt == null)));
         var config = new MapperConfiguration(expr, NullLoggerFactory.Instance);
         config.AssertConfigurationIsValid();
     }
@@ -124,7 +126,13 @@ public class MappingProfileTests
             CreatedAt = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpiresAt = new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc),
             RevokedAt = new DateTime(2024, 12, 1, 0, 0, 0, DateTimeKind.Utc),
-            Status = LicenseStatus.Revoked
+            Status = LicenseStatus.Revoked,
+            MaxActivations = 3,
+            Activations = new List<LicenseActivation>
+            {
+                new() { MachineFingerprint = "fp1", DeactivatedAt = null },
+                new() { MachineFingerprint = "fp2", DeactivatedAt = DateTime.UtcNow }
+            }
         };
 
         var dto = _mapper.Map<LicenseDto>(license);
@@ -135,6 +143,8 @@ public class MappingProfileTests
         dto.ExpiresAt.Should().Be(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc));
         dto.RevokedAt.Should().Be(new DateTime(2024, 12, 1, 0, 0, 0, DateTimeKind.Utc));
         dto.Status.Should().Be(LicenseStatus.Revoked);
+        dto.MaxActivations.Should().Be(3);
+        dto.ActiveActivations.Should().Be(1, "only one activation has no DeactivatedAt");
     }
 
     #endregion

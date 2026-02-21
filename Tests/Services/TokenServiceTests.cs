@@ -1,13 +1,14 @@
 using Core.DTOs;
 using Core.Entities;
 using Core.Enums;
+using Core.Helpers;
 using Core.Interfaces;
 using FluentAssertions;
 using Infrastructure.Services;
 using Infrastructure.Services.Exceptions;
 using Infrastructure.Services.Models;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.Text;
 using Xunit;
@@ -16,7 +17,6 @@ namespace Tests.Services;
 
 public class TokenServiceTests
 {
-    private readonly Mock<IConfiguration> _configMock;
     private readonly Mock<ICacheRepository> _cacheMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ILogger<TokenService>> _loggerMock;
@@ -27,20 +27,21 @@ public class TokenServiceTests
 
     public TokenServiceTests()
     {
-        _configMock = new Mock<IConfiguration>();
         _cacheMock = new Mock<ICacheRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<TokenService>>();
 
-        // Setup default config values with a valid key (32+ bytes)
-        _configMock.Setup(x => x["Jwt:Key"]).Returns(ValidJwtKey);
-        _configMock.Setup(x => x["Jwt:Issuer"]).Returns("localhost");
-        _configMock.Setup(x => x["Jwt:Audience"]).Returns("localhostClient");
-        _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"]).Returns("15");
-        _configMock.Setup(x => x["Jwt:RefreshTokenExpiryDays"]).Returns("30");
+        var jwtSettings = Options.Create(new JwtSettings
+        {
+            Key = ValidJwtKey,
+            Issuer = "localhost",
+            Audience = "localhostClient",
+            AccessTokenExpiryMinutes = 15,
+            RefreshTokenExpiryDays = 30
+        });
 
         _tokenService = new TokenService(
-            _configMock.Object,
+            jwtSettings,
             _cacheMock.Object,
             _unitOfWorkMock.Object,
             _loggerMock.Object

@@ -40,6 +40,11 @@ public class ExceptionMiddleware
             _logger.LogWarning("Token error: {Message}", ex.Message);
             await WriteResponse(context, 401, ex.Message);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogInformation("Request cancelled by client: {Method} {Path}", context.Request.Method, context.Request.Path);
+            context.Response.StatusCode = 499; // Client Closed Request
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception on {Method} {Path}", context.Request.Method, context.Request.Path);

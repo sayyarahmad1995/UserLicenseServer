@@ -14,6 +14,13 @@ public class HealthService
         var info = new DatabaseHealthInfo();
         var connString = _config.GetConnectionString("DefaultConnection");
 
+        if (string.IsNullOrEmpty(connString))
+        {
+            info.Status = "Unreachable";
+            info.Size = "Connection string 'DefaultConnection' is not configured.";
+            return info;
+        }
+
         try
         {
             await using var conn = new NpgsqlConnection(connString);

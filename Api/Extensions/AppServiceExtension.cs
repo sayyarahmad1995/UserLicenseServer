@@ -81,12 +81,23 @@ public static class AppServiceExtension
         services.AddScoped<IUserCacheVersionService, UserCacheVersionService>();
         services.AddScoped<IUserCacheService, UserCacheService>();
 
-        var jwtKey = config["Jwt:Key"];
-        if (string.IsNullOrEmpty(jwtKey) || jwtKey.Length < 64)
-            throw new InvalidOperationException("JWT Key must be at least 64 characters long for HmacSha512.");
+        // Bind and validate JWT settings
+        var jwtSection = config.GetSection("Jwt");
+        services.Configure<JwtSettings>(jwtSection);
+        var jwtSettings = jwtSection.Get<JwtSettings>()
+            ?? throw new InvalidOperationException("Jwt configuration section is missing.");
 
-        var jwtIssuer = config["Jwt:Issuer"];
-        var jwtAudience = config["Jwt:Audience"];
+        if (string.IsNullOrEmpty(jwtSettings.Key) || jwtSettings.Key.Length < 64)
+            throw new InvalidOperationException("JWT Key must be at least 64 characters long for HmacSha512.");
+        if (string.IsNullOrWhiteSpace(jwtSettings.Issuer))
+            throw new InvalidOperationException("Jwt:Issuer must be configured.");
+        if (string.IsNullOrWhiteSpace(jwtSettings.Audience))
+            throw new InvalidOperationException("Jwt:Audience must be configured.");
+        if (jwtSettings.AccessTokenExpiryMinutes <= 0)
+            throw new InvalidOperationException("Jwt:AccessTokenExpiryMinutes must be a positive integer.");
+        if (jwtSettings.RefreshTokenExpiryDays <= 0)
+            throw new InvalidOperationException("Jwt:RefreshTokenExpiryDays must be a positive integer.");
+
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -97,11 +108,11 @@ public static class AppServiceExtension
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidIssuer = jwtIssuer,
+                ValidIssuer = jwtSettings.Issuer,
                 ValidateAudience = true,
-                ValidAudience = jwtAudience,
+                ValidAudience = jwtSettings.Audience,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
                 RoleClaimType = ClaimTypes.Role,
@@ -121,7 +132,7 @@ public static class AppServiceExtension
             };
         });
 
-        var roles = config.GetSection("Jwt:Roles").Get<string[]>();
+        var roles = jwtSettings.Roles;
         services.AddAuthorization(options =>
         {
             if (roles != null)

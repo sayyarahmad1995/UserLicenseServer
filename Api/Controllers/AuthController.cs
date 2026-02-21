@@ -24,7 +24,7 @@ namespace Api.Controllers;
 public class AuthController : BaseApiController
 {
     private readonly ITokenService _tokenService;
-    private readonly IConfiguration _config;
+    private readonly JwtSettings _jwt;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuthHelper _authHelper;
     private readonly IUserCacheService _userCache;
@@ -35,7 +35,7 @@ public class AuthController : BaseApiController
 
     public AuthController(ITokenService tokenService,
     ILogger<AuthController> logger,
-    IConfiguration config,
+    IOptions<JwtSettings> jwtOptions,
     IUnitOfWork unitOfWork,
     IAuthHelper authHelper,
     IUserCacheService userCache,
@@ -46,7 +46,7 @@ public class AuthController : BaseApiController
         _mapper = mapper;
         _logger = logger;
         _tokenService = tokenService;
-        _config = config;
+        _jwt = jwtOptions.Value;
         _unitOfWork = unitOfWork;
         _authHelper = authHelper;
         _userCache = userCache;
@@ -283,14 +283,13 @@ public class AuthController : BaseApiController
             return ApiResult.Fail(500, "Internal server error.");
         }
 
-        _authHelper.SetAuthCookies(Response, result.AccessToken, result.RefreshToken, _config);
+        _authHelper.SetAuthCookies(Response, result.AccessToken, result.RefreshToken);
 
-        var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
         _logger.LogInformation("Token refresh successful");
 
         return ApiResult.Success(200, "Token refreshed successfully.", new
         {
-            AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes)
+            AccessTokenExpires = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes)
         });
     }
 
@@ -337,7 +336,7 @@ public class AuthController : BaseApiController
         await _tokenService.RevokeAllSessionsAsync(parsedUserId, ct);
         _authHelper.ClearAuthCookies(Response);
 
-        await _cacheRepository.PublishInvalidationAsync($"session:{parsedUserId}*");
+        await _cacheRepository.PublishInvalidationAsync(CacheKeys.SessionPattern(parsedUserId));
 
         return ApiResult.Success(200, "All sessions logged out successfully.");
     }

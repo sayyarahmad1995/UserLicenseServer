@@ -1,14 +1,15 @@
 using Core.DTOs;
 using Core.Entities;
 using Core.Enums;
+using Core.Helpers;
 using Core.Interfaces;
 using FluentAssertions;
 using Infrastructure.Interfaces;
 using Infrastructure.Services;
 using Infrastructure.Services.Exceptions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using Xunit;
@@ -20,7 +21,6 @@ public class AuthServiceTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
     private readonly Mock<IAuthHelper> _authHelperMock;
-    private readonly Mock<IConfiguration> _configMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
     private readonly AuthService _authService;
 
@@ -29,14 +29,22 @@ public class AuthServiceTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _tokenServiceMock = new Mock<ITokenService>();
         _authHelperMock = new Mock<IAuthHelper>();
-        _configMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<AuthService>>();
+
+        var jwtSettings = Options.Create(new JwtSettings
+        {
+            Key = "dummy_key_not_used_in_auth_service_tests_pad_to_64_chars_or_more_for_safety",
+            Issuer = "localhost",
+            Audience = "localhostClient",
+            AccessTokenExpiryMinutes = 15,
+            RefreshTokenExpiryDays = 30
+        });
 
         _authService = new AuthService(
             _unitOfWorkMock.Object,
             _tokenServiceMock.Object,
             _authHelperMock.Object,
-            _configMock.Object,
+            jwtSettings,
             _loggerMock.Object
         );
     }
@@ -91,10 +99,7 @@ public class AuthServiceTests
         _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("refresh_token");
 
-        _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
-            .Returns("15");
-
-        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token", _configMock.Object));
+        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token"));
 
         // Act
         var result = await _authService.LoginAsync(loginDto, responseMock.Object);
@@ -217,10 +222,7 @@ public class AuthServiceTests
         _tokenServiceMock.Setup(x => x.GenerateRefreshTokenAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("refresh_token");
 
-        _configMock.Setup(x => x["Jwt:AccessTokenExpiryMinutes"])
-            .Returns("15");
-
-        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token", _configMock.Object));
+        _authHelperMock.Setup(x => x.SetAuthCookies(responseMock.Object, validTokenString, "refresh_token"));
 
         // Act
         var result = await _authService.LoginAsync(loginDto, responseMock.Object);

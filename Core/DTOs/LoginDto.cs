@@ -9,5 +9,6 @@ public class LoginDto
     public required string Username { get; set; }
 
     [Required(ErrorMessage = "Password is required.")]
+    [StringLength(128, ErrorMessage = "Password cannot exceed 128 characters.")]
     public required string Password { get; set; }
 }

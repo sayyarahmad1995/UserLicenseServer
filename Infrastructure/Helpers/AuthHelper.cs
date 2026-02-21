@@ -1,22 +1,30 @@
+using Core.Helpers;
 using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Helpers;
 
 public class AuthHelper : IAuthHelper
 {
-    public void SetAuthCookies(HttpResponse response, string accessToken, string refreshToken, IConfiguration config)
-    {
-        var accessExpiryMinutes = int.Parse(config["Jwt:AccessTokenExpiryMinutes"]!);
-        var refreshExpiryDays = int.Parse(config["Jwt:RefreshTokenExpiryDays"]!);
+    private readonly int _accessExpiryMinutes;
+    private readonly int _refreshExpiryDays;
 
+    public AuthHelper(IOptions<JwtSettings> jwtOptions)
+    {
+        var jwt = jwtOptions.Value;
+        _accessExpiryMinutes = jwt.AccessTokenExpiryMinutes;
+        _refreshExpiryDays = jwt.RefreshTokenExpiryDays;
+    }
+
+    public void SetAuthCookies(HttpResponse response, string accessToken, string refreshToken)
+    {
         var accessOptions = new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes),
+            Expires = DateTime.UtcNow.AddMinutes(_accessExpiryMinutes),
             Path = "/api/v1"
         };
 
@@ -25,7 +33,7 @@ public class AuthHelper : IAuthHelper
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(refreshExpiryDays),
+            Expires = DateTime.UtcNow.AddDays(_refreshExpiryDays),
             Path = "/api/v1/auth"
         };
 

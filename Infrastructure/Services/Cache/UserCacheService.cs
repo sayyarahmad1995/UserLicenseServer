@@ -31,7 +31,7 @@ public class UserCacheService : IUserCacheService
     private async Task<string> BuildListKey(UserSpecParams p)
         => $"users:v{await _versionService.GetVersionAsync()}:{p.PageIndex}-{p.PageSize}-{p.Sort}-{p.Search}-{p.Status}";
     private static string BuildUserKey(int id)
-        => $"user:{id}";
+        => CacheKeys.User(id);
     public async Task<Pagination<UserDto>?> GetUsersAsync(UserSpecParams specParams, CancellationToken ct = default)
         => await _cacheRepo.GetAsync<Pagination<UserDto>>(await BuildListKey(specParams), ct);
     public async Task CacheUsersAsync(UserSpecParams specParams, Pagination<UserDto> data, CancellationToken ct = default)

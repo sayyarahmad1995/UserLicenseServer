@@ -14,16 +14,16 @@ public class UserSpecification : BaseSpecification<User>
             switch (specParams.Sort.ToLower())
             {
                 case "usernameasc":
-                    AddOrderBy(u => u.Username!);
+                    AddOrderBy(u => u.Username);
                     break;
-                case "usernamedesc":
-                    AddOrderByDescending(u => u.Username!);
+                case "username_desc":
+                    AddOrderByDescending(u => u.Username);
                     break;
-                case "emailasc":
-                    AddOrderBy(u => u.Email!);
+                case "email":
+                    AddOrderBy(u => u.Email);
                     break;
-                case "emaildesc":
-                    AddOrderByDescending(u => u.Email!);
+                case "email_desc":
+                    AddOrderByDescending(u => u.Email);
                     break;
                 case "createdatasc":
                     AddOrderBy(u => u.CreatedAt);
@@ -38,10 +38,10 @@ public class UserSpecification : BaseSpecification<User>
                     AddOrderByDescending(u => u.VerifiedAt!);
                     break;
                 case "roleasc":
-                    AddOrderBy(u => u.Role!);
+                    AddOrderBy(u => u.Role);
                     break;
-                case "roledesc":
-                    AddOrderByDescending(u => u.Role!);
+                case "role_desc":
+                    AddOrderByDescending(u => u.Role);
                     break;
                 default:
                     AddOrderBy(u => u.Id);

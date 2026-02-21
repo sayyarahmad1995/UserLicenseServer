@@ -1,4 +1,5 @@
 using Api.Errors;
+using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
 using Infrastructure.Services.Models;
@@ -57,7 +58,7 @@ public class ValidateSessionFilter : IAsyncActionFilter
             var cache = context.HttpContext.RequestServices.GetRequiredService<ICacheRepository>();
             var authHelper = context.HttpContext.RequestServices.GetRequiredService<IAuthHelper>();
 
-            var key = $"session:{userId}:{jti}";
+            var key = CacheKeys.Session(int.Parse(userId), jti);
             var session = await cache.GetAsync<RefreshToken>(key);
 
             if (session == null || session.Revoked)

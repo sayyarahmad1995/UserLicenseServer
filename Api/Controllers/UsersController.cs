@@ -41,7 +41,7 @@ public class UsersController : BaseApiController
         if (cached != null)
         {
             _logger.LogDebug("Users list retrieved from cache");
-            return Ok(cached);
+            return ApiResult.Success(200, "Users retrieved successfully.", cached);
         }
 
         var spec = new UserSpecification(p);
@@ -63,7 +63,7 @@ public class UsersController : BaseApiController
         await _userCache.CacheUsersAsync(p, result, ct);
         _logger.LogDebug("Users list cached - Total count: {TotalCount}", total);
 
-        return Ok(result);
+        return ApiResult.Success(200, "Users retrieved successfully.", result);
     }
 
     [HttpGet("{id:int}")]
@@ -75,7 +75,7 @@ public class UsersController : BaseApiController
         if (cached != null)
         {
             _logger.LogDebug("User {UserId} retrieved from cache", id);
-            return Ok(cached);
+            return ApiResult.Success(200, "User retrieved successfully.", cached);
         }
 
         var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
@@ -261,7 +261,7 @@ public class UsersController : BaseApiController
 
         _logger.LogDebug("Retrieved {LicenseCount} licenses for user {UserId}", licenses.Count, id);
 
-        return Ok(new Pagination<LicenseDto>
+        return ApiResult.Success(200, "Licenses retrieved successfully.", new Pagination<LicenseDto>
         {
             PageIndex = specParams.PageIndex,
             PageSize = specParams.PageSize,

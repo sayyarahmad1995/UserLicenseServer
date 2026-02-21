@@ -1,10 +1,11 @@
 using Core.DTOs;
+using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Interfaces;
 using Infrastructure.Services.Exceptions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Infrastructure.Services;
@@ -14,16 +15,16 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITokenService _tokenService;
     private readonly IAuthHelper _authHelper;
-    private readonly IConfiguration _config;
+    private readonly JwtSettings _jwt;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(IUnitOfWork unitOfWork,
     ITokenService tokenService,
     IAuthHelper authHelper,
-    IConfiguration config,
+    IOptions<JwtSettings> jwtOptions,
     ILogger<AuthService> logger)
     {
-        _config = config;
+        _jwt = jwtOptions.Value;
         _authHelper = authHelper;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
@@ -59,17 +60,15 @@ public class AuthService : IAuthService
 
             var refreshToken = await _tokenService.GenerateRefreshTokenAsync(user, jti, ct);
 
-            _authHelper.SetAuthCookies(response, accessToken, refreshToken, _config);
+            _authHelper.SetAuthCookies(response, accessToken, refreshToken);
             user.LastLogin = DateTime.UtcNow;
             await _unitOfWork.CompleteAsync(ct);
-
-            var accessExpiryMinutes = int.Parse(_config["Jwt:AccessTokenExpiryMinutes"]!);
 
             _logger.LogInformation("Login successful for user {UserId}", user.Id);
 
             return new LoginResultDto
             {
-                AccessTokenExpires = DateTime.UtcNow.AddMinutes(accessExpiryMinutes),
+                AccessTokenExpires = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpiryMinutes),
                 Message = "Login successful"
             };
         }

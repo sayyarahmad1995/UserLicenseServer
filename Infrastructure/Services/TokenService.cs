@@ -1,10 +1,11 @@
 using Core.DTOs;
 using Core.Entities;
+using Core.Helpers;
 using Core.Interfaces;
 using Infrastructure.Services.Models;
 using Infrastructure.Services.Security;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -29,19 +30,19 @@ public class TokenService : ITokenService
     private readonly int _refreshTokenExpiryDays;
     private readonly JwtSecurityTokenHandler _tokenHandler = new();
 
-    public TokenService(IConfiguration config, ICacheRepository cache, IUnitOfWork unitOfWork, ILogger<TokenService> logger)
+    public TokenService(IOptions<JwtSettings> jwtOptions, ICacheRepository cache, IUnitOfWork unitOfWork, ILogger<TokenService> logger)
     {
         _logger = logger;
         _cache = cache;
         _unitOfWork = unitOfWork;
 
-        // Cache these values once in constructor instead of reading config on every call
-        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
+        var jwt = jwtOptions.Value;
+        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
         _signingCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha512);
-        _jwtIssuer = config["Jwt:Issuer"]!;
-        _jwtAudience = config["Jwt:Audience"]!;
-        _accessTokenExpiryMinutes = int.Parse(config["Jwt:AccessTokenExpiryMinutes"]!);
-        _refreshTokenExpiryDays = int.Parse(config["Jwt:RefreshTokenExpiryDays"]!);
+        _jwtIssuer = jwt.Issuer;
+        _jwtAudience = jwt.Audience;
+        _accessTokenExpiryMinutes = jwt.AccessTokenExpiryMinutes;
+        _refreshTokenExpiryDays = jwt.RefreshTokenExpiryDays;
     }
 
     public string GenerateAccessToken(User user)
@@ -51,8 +52,8 @@ public class TokenService : ITokenService
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email!),
-            new(ClaimTypes.Role, user.Role!),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Role, user.Role),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -84,12 +85,12 @@ public class TokenService : ITokenService
             Jti = jti
         };
 
-        var key = $"session:{user.Id}:{jti}";
+        var key = CacheKeys.Session(user.Id, jti);
         var ttl = tokenModel.Expires - DateTime.UtcNow;
         await _cache.SetAsync(key, tokenModel, ttl, ct);
 
         // Store reverse index: tokenHash → session key for O(1) lookup
-        var indexKey = $"tokenindex:{hashedToken}";
+        var indexKey = CacheKeys.TokenIndex(hashedToken);
         await _cache.SetAsync(indexKey, key, ttl, ct);
 
         _logger.LogDebug("Refresh token stored in cache for user {UserId}", user.Id);
@@ -103,7 +104,7 @@ public class TokenService : ITokenService
         var hashedToken = TokenHasher.HashToken(refreshToken);
 
         // O(1) lookup via reverse index instead of scanning all sessions
-        var indexKey = $"tokenindex:{hashedToken}";
+        var indexKey = CacheKeys.TokenIndex(hashedToken);
         var matchedKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (matchedKey == null)
@@ -133,7 +134,9 @@ public class TokenService : ITokenService
             throw new TokenException("Refresh token has expired.");
         }
 
-        var user = await _unitOfWork.UserRepository.GetByIdAsync(int.Parse(matchedToken.UserId), ct);
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(
+            int.TryParse(matchedToken.UserId, out var uid) ? uid
+                : throw new TokenException("Invalid user ID in session data."), ct);
         if (user == null)
         {
             _logger.LogError("User {UserId} not found when refreshing token", matchedToken.UserId);
@@ -157,7 +160,7 @@ public class TokenService : ITokenService
     {
         _logger.LogInformation("Revoking session for user {UserId} with JTI {Jti}", userId, jti);
 
-        var key = $"session:{userId}:{jti}";
+        var key = CacheKeys.Session(userId, jti);
         var tokenModel = await _cache.GetAsync<RefreshToken>(key, ct);
 
         if (tokenModel == null)
@@ -171,7 +174,7 @@ public class TokenService : ITokenService
 
         // Clean up reverse index
         if (!string.IsNullOrEmpty(tokenModel.TokenHash))
-            await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}", ct);
+            await _cache.RemoveAsync(CacheKeys.TokenIndex(tokenModel.TokenHash), ct);
 
         _logger.LogInformation("Session revoked successfully for user {UserId} with JTI {Jti}", userId, jti);
     }
@@ -180,7 +183,7 @@ public class TokenService : ITokenService
     {
         _logger.LogInformation("Revoking all sessions for user {UserId}", userId);
 
-        var keys = await _cache.SearchKeysAsync($"session:{userId}:*");
+        var keys = await _cache.SearchKeysAsync(CacheKeys.SessionPattern(userId));
         int revokedCount = 0;
 
         foreach (var key in keys)
@@ -194,7 +197,7 @@ public class TokenService : ITokenService
 
                 // Clean up reverse index
                 if (!string.IsNullOrEmpty(tokenModel.TokenHash))
-                    await _cache.RemoveAsync($"tokenindex:{tokenModel.TokenHash}", ct);
+                    await _cache.RemoveAsync(CacheKeys.TokenIndex(tokenModel.TokenHash), ct);
 
                 revokedCount++;
             }
@@ -214,7 +217,7 @@ public class TokenService : ITokenService
         var hashedToken = TokenHasher.HashToken(refreshToken);
 
         // O(1) lookup via reverse index
-        var indexKey = $"tokenindex:{hashedToken}";
+        var indexKey = CacheKeys.TokenIndex(hashedToken);
         var sessionKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (sessionKey == null)
@@ -241,7 +244,7 @@ public class TokenService : ITokenService
         var hashedToken = TokenHasher.HashToken(refreshToken);
 
         // O(1) lookup via reverse index
-        var indexKey = $"tokenindex:{hashedToken}";
+        var indexKey = CacheKeys.TokenIndex(hashedToken);
         var sessionKey = await _cache.GetAsync<string>(indexKey, ct);
 
         if (sessionKey == null) return;

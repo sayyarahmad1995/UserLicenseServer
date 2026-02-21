@@ -57,6 +57,7 @@ public static class AppServiceExtension
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         // Email: use SMTP when configured, otherwise log-only for development
         services.Configure<EmailSettings>(config.GetSection("Email"));

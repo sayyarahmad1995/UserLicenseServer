@@ -38,7 +38,7 @@ public class SmtpEmailService : IEmailService
         .header {{ background: #2563eb; padding: 32px; text-align: center; }}
         .header h1 {{ color: #fff; margin: 0; font-size: 22px; }}
         .body {{ padding: 32px; color: #333; line-height: 1.6; }}
-        .btn {{ display: inline-block; background: #2563eb; color: #fff; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 20px 0; }}
+        .btn {{ display: inline-block; background: #2563eb; color: #fff; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-color: #000; font-weight: 600; margin: 20px 0; }}
         .footer {{ padding: 20px 32px; background: #f9fafb; color: #888; font-size: 13px; text-align: center; }}
         .token {{ background: #f1f5f9; padding: 10px 16px; border-radius: 4px; font-family: monospace; font-size: 14px; word-break: break-all; }}
     </style>

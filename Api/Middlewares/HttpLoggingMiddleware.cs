@@ -50,8 +50,14 @@ public class HttpLoggingMiddleware
                 _logger.LogDebug("[{RequestId}] Response Body: {Body}", requestId, responseBody);
             }
 
-            memoryStream.Seek(0, SeekOrigin.Begin);
-            await memoryStream.CopyToAsync(originalBodyStream);
+            // Only copy body back for responses that allow a body (skip 204 No Content, 304 Not Modified)
+            if (context.Response.StatusCode != StatusCodes.Status204NoContent
+                && context.Response.StatusCode != StatusCodes.Status304NotModified
+                && memoryStream.Length > 0)
+            {
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                await memoryStream.CopyToAsync(originalBodyStream);
+            }
         }
         finally
         {

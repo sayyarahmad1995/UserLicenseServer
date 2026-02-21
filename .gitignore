@@ -121,3 +121,4 @@ _ReSharper*/
 .env
 ROADMAP.md
 node_modules/
+logs/

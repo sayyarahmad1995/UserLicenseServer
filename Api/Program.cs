@@ -2,12 +2,34 @@ using Api.Extensions;
 using Api.Middlewares;
 using Infrastructure.Data.Seed;
 using Microsoft.AspNetCore.HttpOverrides;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Replace default logging with Serilog
+builder.Host.UseSerilog((context, services, loggerConfig) =>
+{
+    loggerConfig
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "EazeCad")
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}  {Message:lj}{NewLine}{Exception}")
+        .WriteTo.File("logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] ({SourceContext}) {Message:lj}{NewLine}{Exception}");
+});
 
 builder.Services.AddAppServices(builder.Configuration);
 
 var app = builder.Build();
+
+// Serilog request logging
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
+});
 
 // Support reverse proxy (nginx, Caddy) — must be first
 app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -33,7 +55,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserLicenseServer");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EazeCad License Server");
     });
 }
 
@@ -59,4 +81,3 @@ app.Run();
 /// Public Program class for testing purposes
 /// </summary>
 public partial class Program { }
-

@@ -14,5 +14,6 @@
 **/tmpclaude-*
 **/ROADMAP.md
 **/LICENSE
+**/logs
 *.md
 !README.md

@@ -55,6 +55,11 @@ public static class AppServiceExtension
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuthHelper, AuthHelper>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ILicenseService, LicenseService>();
+        services.AddScoped<IEmailService, ConsoleEmailService>();
+        services.AddScoped<IAuditService, AuditService>();
+
+        services.AddHostedService<LicenseExpirationJob>();
 
         services.Configure<ApiBehaviorOptions>(opt =>
         {

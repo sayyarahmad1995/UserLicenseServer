@@ -28,6 +28,7 @@ public class AuthController : BaseApiController
     private readonly IAuthHelper _authHelper;
     private readonly IUserCacheService _userCache;
     private readonly IAuthService _authService;
+    private readonly IAuditService _auditService;
     private readonly ILogger<AuthController> _logger;
     private readonly IMapper _mapper;
     private readonly ICacheRepository _cacheRepository;
@@ -40,6 +41,7 @@ public class AuthController : BaseApiController
     IUserCacheService userCache,
     ICacheRepository cacheRepository,
     IAuthService authService,
+    IAuditService auditService,
     IMapper mapper)
     {
         _mapper = mapper;
@@ -50,6 +52,7 @@ public class AuthController : BaseApiController
         _authHelper = authHelper;
         _userCache = userCache;
         _authService = authService;
+        _auditService = auditService;
         _cacheRepository = cacheRepository;
     }
 
@@ -62,6 +65,9 @@ public class AuthController : BaseApiController
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return claim != null && int.TryParse(claim, out userId);
     }
+
+    private string GetIpAddress() =>
+        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     /// <summary>
     /// Authenticates a user and returns JWT access token and refresh token.
@@ -88,6 +94,10 @@ public class AuthController : BaseApiController
             _logger.LogInformation("Login attempt initiated");
             var result = await _authService.LoginAsync(dto, Response, ct);
             _logger.LogInformation("Login successful");
+
+            await _auditService.LogAsync("Login", "User", details: $"User '{dto.Username}' logged in",
+                ipAddress: GetIpAddress(), ct: ct);
+
             return ApiResult.Success(200, result.Message, result.AccessTokenExpires != null ? new { result.AccessTokenExpires } : null);
         }
         catch (InvalidCredentialsException)
@@ -96,6 +106,11 @@ public class AuthController : BaseApiController
 
             var attemptInfo = await GetRemainingAttempts(authKey, ct);
             return ApiResult.Fail(401, "Invalid username or password", attemptInfo);
+        }
+        catch (AccountBlockedException ex)
+        {
+            _logger.LogWarning("Login denied - account is blocked");
+            return ApiResult.Fail(403, ex.Message);
         }
         catch (TokenException ex)
         {
@@ -193,7 +208,13 @@ public class AuthController : BaseApiController
         _unitOfWork.UserRepository.Add(user);
         await _unitOfWork.CompleteAsync(ct);
 
+        // Send verification email
+        await _authService.GenerateVerificationTokenAsync(user.Id, ct);
+
         _logger.LogInformation("User registered successfully with ID {UserId}", user.Id);
+
+        await _auditService.LogAsync("Register", "User", user.Id,
+            details: $"User '{user.Username}' registered", ipAddress: GetIpAddress(), ct: ct);
 
         return ApiResult.Created("Registered successfully.");
     }
@@ -335,5 +356,188 @@ public class AuthController : BaseApiController
         await _cacheRepository.PublishInvalidationAsync(CacheKeys.SessionPattern(parsedUserId));
 
         return ApiResult.Success(200, "All sessions logged out successfully.");
+    }
+
+    /// <summary>
+    /// Changes the authenticated user's password. Revokes all sessions on success.
+    /// </summary>
+    /// <param name="dto">Current and new password</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Password changed successfully</response>
+    /// <response code="401">Current password is incorrect or user not authenticated</response>
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var parsedUserId))
+            return ApiResult.Fail(401, "Unauthorized.");
+
+        try
+        {
+            await _authService.ChangePasswordAsync(parsedUserId, dto.CurrentPassword, dto.NewPassword, ct);
+            _authHelper.ClearAuthCookies(Response);
+
+            await _auditService.LogAsync("ChangePassword", "User", parsedUserId, parsedUserId,
+                ipAddress: GetIpAddress(), ct: ct);
+
+            return ApiResult.Success(200, "Password changed successfully. Please log in again.");
+        }
+        catch (InvalidCredentialsException)
+        {
+            return ApiResult.Fail(401, "Current password is incorrect.");
+        }
+    }
+
+    /// <summary>
+    /// Updates the authenticated user's profile (username and/or email).
+    /// </summary>
+    /// <param name="dto">Profile update payload</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Updated user profile</returns>
+    /// <response code="200">Profile updated successfully</response>
+    /// <response code="400">Validation error (duplicate username/email)</response>
+    /// <response code="401">User not authenticated</response>
+    [Authorize]
+    [HttpPut("profile")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileDto dto, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var parsedUserId))
+            return ApiResult.Fail(401, "Unauthorized.");
+
+        if (!ModelState.IsValid)
+            return ApiResult.Validation(ModelState);
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(parsedUserId, ct);
+        if (user == null)
+            return ApiResult.Fail(404, "User not found.");
+
+        if (!string.IsNullOrWhiteSpace(dto.Username) && dto.Username != user.Username)
+        {
+            var existing = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username, ct);
+            if (existing != null)
+                return ApiResult.Fail(400, "Username already taken.");
+            user.Username = dto.Username.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+        {
+            var existing = await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email, ct);
+            if (existing != null)
+                return ApiResult.Fail(400, "Email already in use.");
+            user.Email = dto.Email.Trim();
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.UserRepository.Update(user);
+        await _unitOfWork.CompleteAsync(ct);
+
+        await _userCache.InvalidateUserAsync(parsedUserId);
+
+        var data = _mapper.Map<UserDto>(user);
+        return ApiResult.Success(200, "Profile updated successfully.", data);
+    }
+
+    /// <summary>
+    /// Verifies a user's email using the token sent to their email address.
+    /// </summary>
+    /// <param name="dto">Verification token</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Email verified successfully</response>
+    /// <response code="400">Invalid or expired token, or already verified</response>
+    [AllowAnonymous]
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _authService.VerifyEmailAsync(dto.Token, ct);
+            return ApiResult.Success(200, "Email verified successfully.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApiResult.Fail(400, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Resends a verification email to the specified address.
+    /// </summary>
+    /// <param name="dto">Email address to resend verification to</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Success message (always returns 200 to prevent email enumeration)</returns>
+    /// <response code="200">If the email exists and is unverified, a verification email will be sent</response>
+    [AllowAnonymous]
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _authService.ResendVerificationAsync(dto.Email, ct);
+        }
+        catch (InvalidOperationException)
+        {
+            // Silently ignore to prevent email enumeration
+        }
+
+        return ApiResult.Success(200, "If your email is registered and unverified, a verification email has been sent.");
+    }
+
+    /// <summary>
+    /// Requests a password reset email for the specified email address.
+    /// </summary>
+    /// <param name="dto">Email address</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Success message (always returns 200 to prevent email enumeration)</returns>
+    /// <response code="200">If the email exists, a password reset email will be sent</response>
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ResendVerificationDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _authService.GeneratePasswordResetTokenAsync(dto.Email, ct);
+        }
+        catch (InvalidOperationException)
+        {
+            // Silently ignore to prevent email enumeration
+        }
+
+        return ApiResult.Success(200, "If your email is registered, a password reset email has been sent.");
+    }
+
+    /// <summary>
+    /// Resets the user's password using a password reset token.
+    /// </summary>
+    /// <param name="dto">Reset token and new password</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Password reset successfully</response>
+    /// <response code="400">Invalid or expired token</response>
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword, ct);
+            return ApiResult.Success(200, "Password reset successfully. Please log in with your new password.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApiResult.Fail(400, ex.Message);
+        }
     }
 }

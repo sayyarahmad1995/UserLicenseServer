@@ -17,5 +17,7 @@ public class MappingProfile : Profile
            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
            .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => UserStatus.Unverified));
+
+        CreateMap<AuditLog, AuditLogDto>();
     }
 }

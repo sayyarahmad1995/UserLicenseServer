@@ -112,6 +112,45 @@ public class UsersController : BaseApiController
     }
 
     /// <summary>
+    /// Updates a user's role (Admin or User).
+    /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="dto">Role update payload</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Updated user details</returns>
+    /// <response code="200">Role updated successfully</response>
+    /// <response code="400">Invalid role value</response>
+    /// <response code="404">User not found</response>
+    [HttpPatch("{id:int}/role")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return ApiResult.Validation(ModelState);
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(id, ct);
+        if (user == null)
+        {
+            _logger.LogWarning("UpdateUserRole failed - User {UserId} not found", id);
+            return ApiResult.Fail(404, "User not found");
+        }
+
+        user.Role = dto.Role;
+        user.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.UserRepository.Update(user);
+        await _unitOfWork.CompleteAsync(ct);
+
+        await InvalidateCacheAsync(id);
+
+        var data = _mapper.Map<UserDto>(user);
+        _logger.LogInformation("User {UserId} role updated to {Role}", id, dto.Role);
+
+        return ApiResult.Success(200, "User role updated successfully.", data);
+    }
+
+    /// <summary>
     /// Permanently deletes a user.
     /// </summary>
     /// <param name="id">User ID to delete</param>
@@ -338,5 +377,84 @@ public class UsersController : BaseApiController
 
         var data = _mapper.Map<LicenseDto>(license);
         return ApiResult.Success(200, "License retrieved successfully.", data);
+    }
+
+    /// <summary>
+    /// Bulk update status for multiple users at once.
+    /// </summary>
+    /// <param name="dto">User IDs and target status</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Summary of successful and failed updates</returns>
+    /// <response code="200">Bulk operation completed</response>
+    /// <response code="400">Invalid input</response>
+    [HttpPost("bulk-status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkUpdateStatus([FromBody] BulkStatusUpdateDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return ApiResult.Validation(ModelState);
+
+        var status = dto.Status.Trim().ToLower();
+        var succeeded = new List<int>();
+        var failed = new Dictionary<int, string>();
+
+        foreach (var userId in dto.UserIds.Distinct())
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, ct);
+            if (user == null)
+            {
+                failed[userId] = "User not found";
+                continue;
+            }
+
+            try
+            {
+                switch (status)
+                {
+                    case "verify":
+                    case "verified":
+                        user.Verify();
+                        break;
+                    case "active":
+                        user.Activate();
+                        break;
+                    case "block":
+                    case "blocked":
+                        user.Block();
+                        break;
+                    case "unblock":
+                        user.Unblock();
+                        break;
+                    default:
+                        failed[userId] = "Invalid status";
+                        continue;
+                }
+
+                _unitOfWork.UserRepository.Update(user);
+                succeeded.Add(userId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                failed[userId] = ex.Message;
+            }
+        }
+
+        if (succeeded.Count > 0)
+        {
+            await _unitOfWork.CompleteAsync(ct);
+            await _userCache.InvalidateUsersAsync();
+        }
+
+        _logger.LogInformation("Bulk status update: {Succeeded} succeeded, {Failed} failed",
+            succeeded.Count, failed.Count);
+
+        return ApiResult.Success(200, "Bulk status update completed.", new
+        {
+            Succeeded = succeeded,
+            Failed = failed,
+            SucceededCount = succeeded.Count,
+            FailedCount = failed.Count
+        });
     }
 }

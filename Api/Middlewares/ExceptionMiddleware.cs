@@ -35,6 +35,11 @@ public class ExceptionMiddleware
             _logger.LogWarning("Authentication failed for {Path}", context.Request.Path);
             await WriteResponse(context, 401, "Invalid credentials.");
         }
+        catch (AccountBlockedException ex)
+        {
+            _logger.LogWarning("Blocked account login attempt for {Path}", context.Request.Path);
+            await WriteResponse(context, 403, ex.Message);
+        }
         catch (TokenException ex)
         {
             _logger.LogWarning("Token error: {Message}", ex.Message);

@@ -54,11 +54,50 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore
 
+      - name: Create test settings
+        run: |
+          cat > Api/appsettings.Testing.json << 'EOF'
+          {
+            "Logging": { "LogLevel": { "Default": "Warning" } },
+            "AllowedHosts": "*",
+            "ConnectionStrings": {
+              "DefaultConnection": "Server=localhost;Port=5432;Database=eazecad_db;User Id=postgres;Password=Admin@123;TrustServerCertificate=True;",
+              "Redis": "localhost:6379"
+            },
+            "SeedData": {
+              "AdminUser": {
+                "Username": "admin",
+                "Email": "admin@test.com",
+                "Password": "Admin@123",
+                "Role": "Admin"
+              }
+            },
+            "Jwt": {
+              "Key": "ci_test_jwt_key_for_hmacsha512_it_must_be_at_least_64_bytes_long_padded_to_128_bytes_for_safety!!!!!!!!!!!!!!!!!!!!!!!",
+              "Issuer": "https://ci-test.com",
+              "Audience": "CITestAudience",
+              "AccessTokenExpiryMinutes": "15",
+              "RefreshTokenExpiryDays": "1",
+              "Roles": ["Admin", "User", "Manager"]
+            },
+            "CacheSettings": {
+              "UserExpirationMinutes": 10,
+              "UsersListExpirationMinutes": 5
+            },
+            "ThrottlingSettings": {
+              "Global": { "ThrottleThreshold": 30, "MaxRequestsPerMinute": 60, "WindowSeconds": 60, "MaxDelayMs": 5000, "PenaltySeconds": 600 },
+              "Auth": { "ThrottleThreshold": 3, "MaxRequestsPerMinute": 5, "WindowSeconds": 60, "MaxDelayMs": 10000, "PenaltySeconds": 300 },
+              "User": { "ThrottleThreshold": 60, "MaxRequestsPerMinute": 120, "WindowSeconds": 60, "MaxDelayMs": 3000, "PenaltySeconds": 900 }
+            }
+          }
+          EOF
+
       - name: Run tests
         run: dotnet test -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
         env:
           ConnectionStrings__DefaultConnection: "Server=localhost;Port=5432;Database=eazecad_db;User Id=postgres;Password=Admin@123;"
           ConnectionStrings__Redis: "localhost:6379"
+          ASPNETCORE_ENVIRONMENT: Testing
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

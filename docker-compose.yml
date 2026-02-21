@@ -30,6 +30,8 @@ services:
       - Email__FromName=${SMTP_FROM_NAME:-EazeCad}
       - Email__EnableSsl=${SMTP_ENABLE_SSL:-true}
       - Email__FrontendBaseUrl=${FRONTEND_BASE_URL:-http://localhost:3000}
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN_0:-http://localhost:3000}
+      - Cors__AllowedOrigins__1=${CORS_ORIGIN_1:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy

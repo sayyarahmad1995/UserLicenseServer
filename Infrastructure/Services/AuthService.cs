@@ -134,7 +134,18 @@ public class AuthService : IAuthService
         var token = GenerateSecureToken();
         await _cache.SetAsync($"{VerifyPrefix}{token}", userId, VerifyTokenExpiry, ct);
 
-        await _emailService.SendVerificationEmailAsync(user.Email, token, ct);
+        // Fire-and-forget: don't block the HTTP request on SMTP latency
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendVerificationEmailAsync(user.Email, token);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Background: failed to send verification email to {Email}", user.Email);
+            }
+        });
 
         _logger.LogInformation("Verification token generated for user {UserId}", userId);
         return token;
@@ -181,7 +192,18 @@ public class AuthService : IAuthService
         var token = GenerateSecureToken();
         await _cache.SetAsync($"{ResetPrefix}{token}", user.Id, ResetTokenExpiry, ct);
 
-        await _emailService.SendPasswordResetEmailAsync(user.Email, token, ct);
+        // Fire-and-forget: don't block the HTTP request on SMTP latency
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendPasswordResetEmailAsync(user.Email, token);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Background: failed to send password reset email to {Email}", user.Email);
+            }
+        });
 
         _logger.LogInformation("Password reset token generated for user {UserId}", user.Id);
         return token;

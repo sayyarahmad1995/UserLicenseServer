@@ -442,6 +442,7 @@ public class AuthServiceTests
 
         // Act
         var token = await _authService.GenerateVerificationTokenAsync(1);
+        await Task.Delay(100); // Allow fire-and-forget email task to complete
 
         // Assert
         token.Should().NotBeNullOrEmpty();
@@ -465,6 +466,7 @@ public class AuthServiceTests
 
         // Act
         await _authService.ResendVerificationAsync("test@example.com");
+        await Task.Delay(100); // Allow fire-and-forget email task to complete
 
         // Assert
         _emailServiceMock.Verify(x => x.SendVerificationEmailAsync("test@example.com", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -498,6 +500,7 @@ public class AuthServiceTests
 
         // Act
         var token = await _authService.GeneratePasswordResetTokenAsync("test@example.com");
+        await Task.Delay(100); // Allow fire-and-forget email task to complete
 
         // Assert
         token.Should().NotBeNullOrEmpty();

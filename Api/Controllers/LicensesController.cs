@@ -1,3 +1,4 @@
+using Api.Extensions;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
@@ -68,13 +69,35 @@ public class LicensesController : BaseApiController
         var licenses = await _unitOfWork.LicenseRepository.ListAsync(spec, ct);
         var data = _mapper.Map<IReadOnlyList<LicenseDto>>(licenses);
 
-        return ApiResult.Success(200, "Licenses retrieved successfully.", new Pagination<LicenseDto>
+        var result = new Pagination<LicenseDto>
         {
             PageIndex = specParams.PageIndex,
             PageSize = specParams.PageSize,
             TotalCount = totalItems,
             Data = data
-        });
+        };
+
+        Response.AddPaginationHeaders(result);
+        return ApiResult.Success(200, "Licenses retrieved successfully.", result);
+    }
+
+    /// <summary>
+    /// Exports all licenses as a CSV file.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>CSV file download</returns>
+    /// <response code="200">CSV file</response>
+    [HttpGet("export")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ExportLicenses(CancellationToken ct)
+    {
+        var licenses = await _unitOfWork.LicenseRepository.ListAllAsync(ct);
+        var dtos = _mapper.Map<IReadOnlyList<LicenseDto>>(licenses);
+        var csv = CsvExporter.ToCsv(dtos);
+
+        _logger.LogInformation("Exported {Count} licenses to CSV", dtos.Count);
+
+        return File(csv, "text/csv", $"licenses_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
     }
 
     /// <summary>

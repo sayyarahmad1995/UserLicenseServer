@@ -1,3 +1,4 @@
+using Api.Extensions;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
@@ -55,12 +56,15 @@ public class AuditController : BaseApiController
 
         _logger.LogDebug("Retrieved {Count} audit logs (page {Page})", data.Count, page);
 
-        return ApiResult.Success(200, "Audit logs retrieved successfully.", new Pagination<AuditLogDto>
+        var result = new Pagination<AuditLogDto>
         {
             PageIndex = page,
             PageSize = pageSize,
             TotalCount = total,
             Data = data
-        });
+        };
+
+        Response.AddPaginationHeaders(result);
+        return ApiResult.Success(200, "Audit logs retrieved successfully.", result);
     }
 }

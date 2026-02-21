@@ -1,3 +1,4 @@
+using Api.Extensions;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
@@ -53,6 +54,7 @@ public class UsersController : BaseApiController
         if (cached != null)
         {
             _logger.LogDebug("Users list retrieved from cache");
+            Response.AddPaginationHeaders(cached);
             return ApiResult.Success(200, "Users retrieved successfully.", cached);
         }
 
@@ -75,7 +77,55 @@ public class UsersController : BaseApiController
         await _userCache.CacheUsersAsync(p, result, ct);
         _logger.LogDebug("Users list cached - Total count: {TotalCount}", total);
 
+        Response.AddPaginationHeaders(result);
         return ApiResult.Success(200, "Users retrieved successfully.", result);
+    }
+
+    /// <summary>
+    /// Exports all users as a CSV file.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>CSV file download</returns>
+    /// <response code="200">CSV file</response>
+    [HttpGet("export")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ExportUsers(CancellationToken ct)
+    {
+        var users = await _unitOfWork.UserRepository.ListAllAsync(ct);
+        var dtos = _mapper.Map<IReadOnlyList<UserDto>>(users);
+        var csv = CsvExporter.ToCsv(dtos);
+
+        _logger.LogInformation("Exported {Count} users to CSV", dtos.Count);
+
+        return File(csv, "text/csv", $"users_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
+    }
+
+    /// <summary>
+    /// Finds the user who owns a given license key.
+    /// </summary>
+    /// <param name="key">License key (XXXXX-XXXXX-XXXXX-XXXXX-XXXXX)</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>User details</returns>
+    /// <response code="200">User found</response>
+    /// <response code="404">License key not found</response>
+    [HttpGet("by-license-key/{key}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserByLicenseKey(string key, CancellationToken ct)
+    {
+        var license = await _unitOfWork.LicenseRepository.GetByIdAsync(key, ct);
+        if (license == null)
+        {
+            _logger.LogWarning("License key {Key} not found for user lookup", key);
+            return ApiResult.Fail(404, "License key not found.");
+        }
+
+        var user = await _unitOfWork.UserRepository.GetByIdAsync(license.UserId, ct);
+        if (user == null)
+            return ApiResult.Fail(404, "User not found for this license.");
+
+        var data = _mapper.Map<UserDto>(user);
+        return ApiResult.Success(200, "User retrieved by license key.", data);
     }
 
     /// <summary>
@@ -344,13 +394,16 @@ public class UsersController : BaseApiController
 
         _logger.LogDebug("Retrieved {LicenseCount} licenses for user {UserId}", licenses.Count, id);
 
-        return ApiResult.Success(200, "Licenses retrieved successfully.", new Pagination<LicenseDto>
+        var result = new Pagination<LicenseDto>
         {
             PageIndex = specParams.PageIndex,
             PageSize = specParams.PageSize,
             TotalCount = totalItems,
             Data = data
-        });
+        };
+
+        Response.AddPaginationHeaders(result);
+        return ApiResult.Success(200, "Licenses retrieved successfully.", result);
     }
 
     /// <summary>

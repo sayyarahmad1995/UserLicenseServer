@@ -104,13 +104,15 @@ public class AuthController : BaseApiController
         catch (InvalidCredentialsException)
         {
             _logger.LogWarning("Login failed - invalid credentials");
+            _authHelper.ClearAuthCookies(Response);
 
             var attemptInfo = await GetRemainingAttempts(authKey, ct);
-            return ApiResult.Fail(401, "Invalid username or password", attemptInfo);
+            return ApiResult.Fail(400, "Invalid username or password", attemptInfo);
         }
         catch (AccountBlockedException ex)
         {
             _logger.LogWarning("Login denied - account is blocked");
+            _authHelper.ClearAuthCookies(Response);
             return ApiResult.Fail(403, ex.Message);
         }
         catch (TokenException ex)

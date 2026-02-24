@@ -2,6 +2,7 @@ using Api.Extensions;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
+using Core.Enums;
 using Core.Helpers;
 using Core.Interfaces;
 using Core.Spec;
@@ -189,6 +190,74 @@ public class LicensesController : BaseApiController
         catch (InvalidOperationException ex)
         {
             return ApiResult.Fail(400, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Updates the status of a license (admin operation).
+    /// </summary>
+    /// <param name="id">License ID</param>
+    /// <param name="dto">Status update payload</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Updated license details</returns>
+    /// <response code="200">License status updated successfully</response>
+    /// <response code="400">Invalid status or invalid operation</response>
+    /// <response code="404">License not found</response>
+    [HttpPut("{id:int}/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateLicenseStatus(int id, [FromBody] UpdateLicenseStatusDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return ApiResult.Validation(ModelState);
+
+        try
+        {
+            var newStatusStr = dto.Status?.Trim().ToLower() ?? "";
+            if (string.IsNullOrEmpty(newStatusStr))
+                return ApiResult.Fail(400, "Status cannot be empty.");
+
+            var license = await _unitOfWork.LicenseRepository.GetByIdAsync(id, ct);
+            if (license == null)
+                return ApiResult.Fail(404, "License not found.");
+
+            var oldStatus = license.Status;
+            LicenseStatus newStatus;
+
+            // Parse new status
+            switch (newStatusStr)
+            {
+                case "active":
+                    newStatus = LicenseStatus.Active;
+                    break;
+                case "expired":
+                    return ApiResult.Fail(400, "License expiration is automatic and cannot be manually set.");
+                case "revoked":
+                    return ApiResult.Fail(400, "Use the /revoke endpoint to revoke a license.");
+                default:
+                    return ApiResult.Fail(400, $"Invalid status '{dto.Status}'. Valid values: Active");
+            }
+
+            license.Status = newStatus;
+
+            _unitOfWork.LicenseRepository.Update(license);
+            await _unitOfWork.CompleteAsync(ct);
+
+            var reason = !string.IsNullOrWhiteSpace(dto.Reason) ? dto.Reason : $"Status changed from {oldStatus} to {newStatus}";
+            await _auditService.LogAsync("UpdateLicenseStatus", "License", id, GetAdminUserId(),
+                reason, GetIpAddress(), ct);
+
+            var data = _mapper.Map<LicenseDto>(license);
+            _logger.LogInformation("License {LicenseId} status updated from {OldStatus} to {NewStatus}", 
+                id, oldStatus, newStatus);
+
+            return ApiResult.Success(200, $"License status updated to {newStatus}.", data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating license status for license {LicenseId}", id);
+            return ApiResult.Fail(500, "An error occurred while updating the license status.");
         }
     }
 

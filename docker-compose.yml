@@ -8,7 +8,7 @@ services:
       - "3000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=eazecad_db;User Id=postgres;Password=${POSTGRES_PASSWORD};
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5433;Database=eazecad_db;User Id=postgres;Password=${POSTGRES_PASSWORD};
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD}
       - Jwt__Key=${JWT_KEY}
       - Jwt__Issuer=${JWT_ISSUER:-eazecad.com}
@@ -56,7 +56,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d eazecad_db"]
       interval: 5s

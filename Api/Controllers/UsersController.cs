@@ -2,6 +2,7 @@ using Api.Extensions;
 using Api.Helpers;
 using AutoMapper;
 using Core.DTOs;
+using Core.Entities;
 using Core.Interfaces;
 using Core.Helpers;
 using Core.Spec;
@@ -160,6 +161,93 @@ public class UsersController : BaseApiController
 
         return ApiResult.Success(200, "User retrieved successfully.", dto);
     }
+
+    /// <summary>
+    /// Creates a new user (admin operation).
+    /// </summary>
+    /// <param name="dto">User creation payload with username, email, password, and initial status</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Newly created user details</returns>
+    /// <response code="201">User created successfully</response>
+    /// <response code="400">Invalid input or username/email already exists</response>
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return ApiResult.Validation(ModelState);
+
+        _logger.LogInformation("CreateUser called for username: {Username}, email: {Email}", dto.Username, dto.Email);
+
+        try
+        {
+            // Check if username already exists
+            var existingByUsername = await _unitOfWork.UserRepository.GetByUsernameAsync(dto.Username, ct);
+            if (existingByUsername != null)
+                return ApiResult.Fail(400, $"Username '{dto.Username}' already exists.");
+
+            // Check if email already exists
+            var existingByEmail = await _unitOfWork.UserRepository.GetByEmailAsync(dto.Email, ct);
+            if (existingByEmail != null)
+                return ApiResult.Fail(400, $"Email '{dto.Email}' is already registered.");
+
+            // Create new user
+            var user = new User
+            {
+                Username = dto.Username,
+                Email = dto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                VerifiedAt = DateTime.UtcNow, // Admin-created users are assumed verified
+            };
+
+            // Set initial status
+            if (!string.IsNullOrWhiteSpace(dto.InitialStatus))
+            {
+                switch (dto.InitialStatus.ToLower())
+                {
+                    case "active":
+                        user.Activate();
+                        break;
+                    case "inactive":
+                    case "unverified":
+                        // Default state
+                        break;
+                    case "verified":
+                        user.Verify();
+                        break;
+                    case "blocked":
+                        user.Block();
+                        break;
+                    default:
+                        return ApiResult.Fail(400, $"Invalid status '{dto.InitialStatus}'. Valid values: Active, Verified, Blocked");
+                }
+            }
+            else
+            {
+                // Set default status to Active
+                user.Activate();
+            }
+
+            _unitOfWork.UserRepository.Add(user);
+            await _unitOfWork.CompleteAsync(ct);
+
+            var userDto = _mapper.Map<UserDto>(user);
+            await _userCache.InvalidateUsersAsync();
+
+            _logger.LogInformation("User created successfully: {UserId}, username: {Username}", user.Id, user.Username);
+
+            return ApiResult.Success(201, "User created successfully.", userDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user with username: {Username}", dto.Username);
+            return ApiResult.Fail(500, "An error occurred while creating the user.");
+        }
+    }
+
 
     /// <summary>
     /// Updates a user's role (Admin or User).

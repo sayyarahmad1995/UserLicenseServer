@@ -113,16 +113,8 @@ public class AppMetricsService : BackgroundService
         long totalUsers = 0;
         foreach (var row in userStats)
         {
-            int status = (int)row.Status;
+            string statusName = (string)row.Status;
             long count = (long)row.count;
-            string statusName = status switch
-            {
-                1 => "Verified",
-                2 => "Unverified",
-                3 => "Blocked",
-                4 => "Active",
-                _ => "Unknown"
-            };
             UsersByStatus.WithLabels(statusName).Set(count);
             totalUsers += count;
         }
@@ -139,15 +131,8 @@ public class AppMetricsService : BackgroundService
         long totalLicenses = 0;
         foreach (var row in licenseStats)
         {
-            int status = (int)row.Status;
+            string statusName = (string)row.Status;
             long count = (long)row.count;
-            string statusName = status switch
-            {
-                1 => "Active",
-                2 => "Expired",
-                3 => "Revoked",
-                _ => "Unknown"
-            };
             LicensesByStatus.WithLabels(statusName).Set(count);
             totalLicenses += count;
         }
@@ -158,7 +143,7 @@ public class AppMetricsService : BackgroundService
             """
             SELECT COUNT(*)
             FROM "Licenses"
-            WHERE "Status" = 1
+            WHERE "Status" = 'Active'
               AND "ExpiresAt" <= @threshold
             """,
             new { threshold = DateTime.UtcNow.AddDays(7) });

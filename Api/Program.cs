@@ -65,7 +65,12 @@ if (!app.Environment.IsEnvironment("Testing"))
     await DbInitializer.InitializeAsync(app.Services, app.Environment.IsDevelopment());
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection disabled in development to prevent CORS preflight issues
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseRouting();
 app.UseCors("DefaultPolicy");
 app.UseAuthentication();

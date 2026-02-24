@@ -39,16 +39,8 @@ public class DashboardService : IDashboardService
 
         foreach (var row in userRows)
         {
-            int status = (int)row.Status;
+            string statusName = (string)row.Status;
             int count = (int)(long)row.count;
-            string statusName = status switch
-            {
-                1 => "Verified",
-                2 => "Unverified",
-                3 => "Blocked",
-                4 => "Active",
-                _ => "Unknown"
-            };
             stats.UsersByStatus[statusName] = count;
             stats.TotalUsers += count;
         }
@@ -82,15 +74,8 @@ public class DashboardService : IDashboardService
 
         foreach (var row in licenseRows)
         {
-            int status = (int)row.Status;
+            string statusName = (string)row.Status;
             int count = (int)(long)row.count;
-            string statusName = status switch
-            {
-                1 => "Active",
-                2 => "Expired",
-                3 => "Revoked",
-                _ => "Unknown"
-            };
             stats.LicensesByStatus[statusName] = count;
             stats.TotalLicenses += count;
         }
@@ -100,7 +85,7 @@ public class DashboardService : IDashboardService
             """
             SELECT COUNT(*)
             FROM "Licenses"
-            WHERE "Status" = 1 AND "ExpiresAt" <= @threshold
+            WHERE "Status" = 'Active' AND "ExpiresAt" <= @threshold
             """,
             new { threshold = now.AddDays(7) });
 
@@ -125,7 +110,7 @@ public class DashboardService : IDashboardService
             FROM pg_stat_activity
             WHERE datname = current_database()
             """);
-        stats.ActiveDbConnections = connStats != null ? (int)connStats.active : 0;
+        stats.ActiveDbConnections = connStats != null ? (int)(long)connStats.active : 0;
 
         // ── Cache hit ratio ──
         var dbStats = await conn.QueryFirstOrDefaultAsync(
